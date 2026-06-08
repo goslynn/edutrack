@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduTrack — Patrones de Diseño Backend</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #FAFAFA;
+  --surface:  #FFFFFF;
+  --surface2: #F4F5F7;
+  --bd:       #E2E4E9;
+  --bd2:      #C8CBD5;
+  --tx:       #1A1D23;
+  --tx2:      #4B5263;
+  --tx3:      #8B90A0;
+  --acc:      #2563EB;
+  --acc-bg:   #EFF4FF;
+  --acc-bd:   #BFCFFD;
+  --green:    #16A34A;
+  --green-bg: #F0FDF4;
+  --green-bd: #BBF7D0;
+  --amber:    #B45309;
+  --amber-bg: #FFFBEB;
+  --amber-bd: #FDE68A;
+  --purple:   #7C3AED;
+  --purple-bg:#F5F3FF;
+  --purple-bd:#DDD6FE;
+  --red:      #DC2626;
+  --mono:     'JetBrains Mono', monospace;
+  --sans:     'Inter', system-ui, sans-serif;
+  --sidebar-w: 252px;
+  --top-h:    48px;
+  --r:        6px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--tx);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TOPBAR ──────────────────────────────── */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: var(--top-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--bd);
+  display: flex; align-items: center;
+  padding: 0 1.25rem; gap: 1rem;
+}
+.topbar-logo {
+  font-size: 13px; font-weight: 600; color: var(--tx);
+  letter-spacing: -0.01em;
+}
+.topbar-logo span { color: var(--tx3); font-weight: 400; }
+.topbar-sep { width: 1px; height: 16px; background: var(--bd); }
+.topbar-label { font-size: 12px; color: var(--tx3); }
+
+.tabs {
+  margin-left: auto;
+  display: flex; gap: 2px;
+  background: var(--surface2);
+  border: 1px solid var(--bd);
+  border-radius: var(--r);
+  padding: 2px;
+}
+.tab {
+  font-size: 12px; font-weight: 500;
+  padding: 4px 12px; border-radius: 4px;
+  border: none; cursor: pointer;
+  background: transparent; color: var(--tx2);
+  transition: background .15s, color .15s;
+}
+.tab.active { background: var(--surface); color: var(--tx); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.tab:hover:not(.active) { color: var(--tx); }
+
+/* ── LAYOUT ──────────────────────────────── */
+.shell { display: flex; padding-top: var(--top-h); min-height: 100vh; }
+
+/* ── SIDEBAR ─────────────────────────────── */
+.sidebar {
+  position: fixed; top: var(--top-h); left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--bd);
+  overflow-y: auto; overflow-x: hidden;
+  padding: 1rem 0 2rem;
+  scrollbar-width: thin; scrollbar-color: var(--bd) transparent;
+}
+.sb-section { margin-bottom: 0.25rem; }
+.sb-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--tx3);
+  padding: 0.6rem 1rem 0.3rem;
+}
+.sb-divider { height: 1px; background: var(--bd); margin: 0.5rem 0.75rem; }
+.nav-link {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  font-size: 12.5px; color: var(--tx2);
+  text-decoration: none; border-left: 2px solid transparent;
+  transition: color .12s, background .12s, border-color .12s;
+  line-height: 1.4;
+}
+.nav-link:hover { color: var(--tx); background: var(--surface2); }
+.nav-link.active { color: var(--acc); border-left-color: var(--acc); background: var(--acc-bg); }
+.nav-link .n { font-size: 11px; color: var(--tx3); min-width: 18px; padding-top: 1px; flex-shrink: 0; }
+.nav-link.active .n { color: var(--acc); }
+.nav-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+
+/* ── MAIN ────────────────────────────────── */
+.main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; }
+.page { display: none; padding: 2rem 2.5rem 5rem; max-width: 860px; }
+.page.active { display: block; }
+
+/* ── TYPOGRAPHY ──────────────────────────── */
+h1 { font-size: 1.5rem; font-weight: 600; color: var(--tx); letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+h2 { font-size: 1.1rem; font-weight: 600; color: var(--tx); letter-spacing: -0.01em; margin-bottom: 0.75rem; }
+h3 { font-size: 0.9rem; font-weight: 600; color: var(--tx2); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.5rem; }
+p  { color: var(--tx2); line-height: 1.7; }
+
+code {
+  font-family: var(--mono); font-size: 11.5px;
+  background: var(--surface2); border: 1px solid var(--bd);
+  padding: 1px 5px; border-radius: 3px; color: var(--tx);
+}
+
+/* ── HERO ────────────────────────────────── */
+.hero { padding-bottom: 1.75rem; border-bottom: 1px solid var(--bd); margin-bottom: 2rem; }
+.hero h1 { margin-bottom: 0.3rem; }
+.hero p { font-size: 13.5px; max-width: 560px; }
+.hero-meta {
+  display: flex; gap: 2rem; margin-top: 1.25rem; flex-wrap: wrap;
+}
+.meta-item { display: flex; flex-direction: column; gap: 1px; }
+.meta-val { font-size: 18px; font-weight: 600; color: var(--tx); }
+.meta-lbl { font-size: 11px; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ── MS REGISTRY ─────────────────────────── */
+.section { margin-bottom: 2.5rem; }
+.section-title {
+  font-size: 11px; font-weight: 600; color: var(--tx3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem; border-bottom: 1px solid var(--bd);
+}
+.ms-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+.ms-card {
+  padding: 0.75rem 0.9rem;
+  background: var(--surface); border: 1px solid var(--bd);
+  border-radius: var(--r);
+  display: flex; align-items: flex-start; gap: 0.65rem;
+  transition: border-color .15s;
+}
+.ms-card:hover { border-color: var(--bd2); }
+.ms-icon {
+  width: 28px; height: 28px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+  background: var(--surface2);
+}
+.ms-info { min-width: 0; }
+.ms-abbr {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  color: var(--ms-color, var(--acc)); letter-spacing: 0.06em;
+}
+.ms-name { font-size: 12.5px; font-weight: 500; color: var(--tx); margin-bottom: 2px; }
+.ms-desc { font-size: 11px; color: var(--tx3); line-height: 1.45; }
+
+/* ms chip (inline) */
+.ms-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  padding: 1px 6px; border-radius: 3px;
+  border: 1px solid; white-space: nowrap;
+}
+
+/* ── BLOCK ───────────────────────────────── */
+.block {
+  padding-top: 2rem; margin-top: 2rem;
+  border-top: 1px solid var(--bd);
+}
+.block:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+.block-eyebrow {
+  font-family: var(--mono); font-size: 10px; color: var(--tx3);
+  margin-bottom: 0.3rem; letter-spacing: 0.06em;
+}
+.block-title {
+  font-size: 1.05rem; font-weight: 600; color: var(--tx);
+  letter-spacing: -0.01em; margin-bottom: 0.6rem;
+}
+.block-ms { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.6rem; }
+.block-reqs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 1rem; }
+.req-badge {
+  font-family: var(--mono); font-size: 10px;
+  padding: 2px 6px; border-radius: 3px;
+  background: var(--acc-bg); border: 1px solid var(--acc-bd);
+  color: var(--acc);
+}
+
+/* pattern tags */
+.ptags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 1rem; }
+.ptag {
+  font-size: 11.5px; font-weight: 500;
+  padding: 3px 9px; border-radius: 4px;
+  display: flex; align-items: center; gap: 4px;
+}
+.ptag.arch   { background: var(--acc-bg);    border: 1px solid var(--acc-bd);    color: var(--acc); }
+.ptag.behave { background: var(--green-bg);   border: 1px solid var(--green-bd);  color: var(--green); }
+.ptag.struct { background: var(--purple-bg);  border: 1px solid var(--purple-bd); color: var(--purple); }
+.ptag.create { background: var(--amber-bg);   border: 1px solid var(--amber-bd);  color: var(--amber); }
+.ptag .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* desc */
+.desc { font-size: 13.5px; color: var(--tx2); line-height: 1.75; margin-bottom: 1rem; }
+.desc strong { color: var(--tx); font-weight: 500; }
+
+/* rationale */
+.rationale {
+  background: var(--surface2); border: 1px solid var(--bd);
+  border-left: 3px solid var(--acc-bd);
+  border-radius: var(--r); padding: 0.9rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.rationale h3 { font-size: 10px; color: var(--tx3); margin-bottom: 0.35rem; }
+.rationale p { font-size: 13px; color: var(--tx2); }
+.rationale code { font-size: 11px; }
+
+/* req table */
+.req-table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; }
+.req-table th {
+  font-size: 10px; font-weight: 600; color: var(--tx3);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  text-align: left; padding: 0.4rem 0.65rem;
+  border-bottom: 1px solid var(--bd); background: var(--surface2);
+}
+.req-table td {
+  padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--bd);
+  font-size: 12.5px; color: var(--tx2); vertical-align: top;
+}
+.req-table td:first-child {
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--acc); white-space: nowrap; width: 100px;
+}
+.req-table tr:last-child td { border-bottom: none; }
+.req-table tr:hover td { background: var(--surface2); }
+.req-table { border: 1px solid var(--bd); border-radius: var(--r); overflow: hidden; }
+
+/* doc links */
+.doclinks { display: flex; flex-wrap: wrap; gap: 5px; }
+.doclink {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; font-weight: 500; color: var(--tx2);
+  text-decoration: none; padding: 4px 10px;
+  background: var(--surface); border: 1px solid var(--bd); border-radius: var(--r);
+  transition: border-color .12s, color .12s;
+}
+.doclink:hover { color: var(--acc); border-color: var(--acc-bd); }
+.doclink svg { width: 10px; height: 10px; flex-shrink: 0; opacity: 0.6; }
+
+/* ── DIAGRAMS PAGE ───────────────────────── */
+.page-intro { padding-bottom: 1.5rem; border-bottom: 1px solid var(--bd); margin-bottom: 2rem; }
+.page-intro p { font-size: 13.5px; }
+
+.diag-block {
+  margin-bottom: 2rem;
+  border: 1px solid var(--bd); border-radius: var(--r);
+  overflow: hidden; background: var(--surface);
+}
+.diag-header {
+  padding: 0.75rem 1rem; border-bottom: 1px solid var(--bd);
+  background: var(--surface2);
+  display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;
+}
+.diag-num {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  color: var(--tx3); letter-spacing: 0.06em;
+}
+.diag-title { font-size: 13px; font-weight: 500; color: var(--tx); }
+.diag-ms { margin-left: auto; display: flex; gap: 4px; }
+.diag-body { padding: 1.5rem; overflow-x: auto; }
+.diag-body .mermaid { display: flex; justify-content: center; }
+
+/* legend */
+.legend {
+  display: flex; gap: 1.25rem; flex-wrap: wrap;
+  margin-bottom: 1.5rem; padding: 0.65rem 0.9rem;
+  background: var(--surface); border: 1px solid var(--bd); border-radius: var(--r);
+  font-size: 11.5px;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; color: var(--tx2); }
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">EduTrack <span>/ Patrones Backend</span></div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-label">DSY1106 · Evaluación Parcial N°1 · v1</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchPage('patterns')">Patrones</button>
+    <button class="tab" onclick="switchPage('diagrams')">Diagramas</button>
+  </div>
+</div>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-section">
+    <div class="sb-label">Microservicios</div>
+    <a class="nav-link" href="#ms-registry" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">↗</span><span>Ver registro completo</span>
+    </a>
+  </div>
+
+  <div class="sb-divider"></div>
+
+  <div class="sb-section">
+    <div class="sb-label">Bloques de Patrones</div>
+
+    <a class="nav-link active" href="#b1" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">01</span>
+      <div>
+        <div>Auth y Permisos</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#2563EB;border-color:#BFCFFD;background:#EFF4FF">🔐 AUTH</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="nav-link" href="#b2" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">02</span>
+      <div>
+        <div>Permisos por Curso</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#0369A1;border-color:#BAE6FD;background:#F0F9FF">📚 CRS</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="nav-link" href="#b3" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">03</span>
+      <div>
+        <div>API Gateway</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#7C3AED;border-color:#DDD6FE;background:#F5F3FF">🔀 GW</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="nav-link" href="#b4" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">04</span>
+      <div>
+        <div>Resiliencia</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#B45309;border-color:#FDE68A;background:#FFFBEB">🔔 NOT</span>
+          <span class="ms-chip" style="color:#4B5563;border-color:#E5E7EB;background:#F9FAFB">⚙️ TRV</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="nav-link" href="#b5" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">05</span>
+      <div>
+        <div>Mensajería y Notif.</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#16A34A;border-color:#BBF7D0;background:#F0FDF4">👨‍🎓 STU</span>
+          <span class="ms-chip" style="color:#DC2626;border-color:#FECACA;background:#FEF2F2">📝 ANN</span>
+          <span class="ms-chip" style="color:#B45309;border-color:#FDE68A;background:#FFFBEB">🔔 NOT</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="nav-link" href="#b6" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">06</span>
+      <div>
+        <div>Jerarquía Contenido</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#0369A1;border-color:#BAE6FD;background:#F0F9FF">📁 CNT</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="nav-link" href="#b7" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">07</span>
+      <div>
+        <div>Asistencia</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#0F766E;border-color:#99F6E4;background:#F0FDFA">✅ ATT</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="nav-link" href="#b8" onclick="switchPage('patterns');setActive(this)">
+      <span class="n">08</span>
+      <div>
+        <div>Reportes</div>
+        <div class="nav-chips">
+          <span class="ms-chip" style="color:#7C3AED;border-color:#DDD6FE;background:#F5F3FF">📊 RPT</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="sb-divider"></div>
+
+  <div class="sb-section">
+    <div class="sb-label">Diagramas</div>
+    <a class="nav-link" href="#d1" onclick="switchPage('diagrams');setActive(this)"><span class="n">D1</span>Auth JWT + Permisos</a>
+    <a class="nav-link" href="#d2" onclick="switchPage('diagrams');setActive(this)"><span class="n">D2</span>Permisos por Curso</a>
+    <a class="nav-link" href="#d3" onclick="switchPage('diagrams');setActive(this)"><span class="n">D3</span>Gateway Chain</a>
+    <a class="nav-link" href="#d4" onclick="switchPage('diagrams');setActive(this)"><span class="n">D4</span>Circuit Breaker</a>
+    <a class="nav-link" href="#d5" onclick="switchPage('diagrams');setActive(this)"><span class="n">D5</span>Notificaciones</a>
+    <a class="nav-link" href="#d6" onclick="switchPage('diagrams');setActive(this)"><span class="n">D6</span>Composite Contenido</a>
+    <a class="nav-link" href="#d7" onclick="switchPage('diagrams');setActive(this)"><span class="n">D7</span>Asistencia Agnóstica</a>
+    <a class="nav-link" href="#d8" onclick="switchPage('diagrams');setActive(this)"><span class="n">D8</span>Reportes Cross-Schema</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ═══ PAGE: PATTERNS ═══ -->
+<div class="page active" id="page-patterns">
+
+  <div class="hero">
+    <h1>Patrones de Diseño — Backend</h1>
+    <p>Estrategia de implementación por bloque de requisitos. Cada bloque indica los microservicios involucrados, los patrones elegidos, la justificación y referencias de documentación.</p>
+    <div class="hero-meta">
+      <div class="meta-item"><div class="meta-val">9</div><div class="meta-lbl">Microservicios</div></div>
+      <div class="meta-item"><div class="meta-val">8</div><div class="meta-lbl">Bloques</div></div>
+      <div class="meta-item"><div class="meta-val">18+</div><div class="meta-lbl">Patrones</div></div>
+      <div class="meta-item"><div class="meta-val">8</div><div class="meta-lbl">Diagramas</div></div>
+    </div>
+  </div>
+
+  <!-- MS REGISTRY -->
+  <div class="section" id="ms-registry">
+    <div class="section-title">Registro de Microservicios</div>
+    <div class="ms-grid">
+
+      <div class="ms-card" style="--ms-color:#2563EB">
+        <div class="ms-icon">🔐</div>
+        <div class="ms-info">
+          <div class="ms-abbr">AUTH</div>
+          <div class="ms-name">Auth Service</div>
+          <div class="ms-desc">JWT RS256, roles dinámicos, permisos Unix-style</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#0369A1">
+        <div class="ms-icon">📚</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#0369A1">CRS</div>
+          <div class="ms-name">Course Service</div>
+          <div class="ms-desc">Cursos, permisos READ/WRITE por docente-curso</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#16A34A">
+        <div class="ms-icon">👨‍🎓</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#16A34A">STU</div>
+          <div class="ms-name">Student Service</div>
+          <div class="ms-desc">Alumnos, apoderados, eventos de ciclo de vida</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#0369A1">
+        <div class="ms-icon">📁</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#0369A1">CNT</div>
+          <div class="ms-name">Content Service</div>
+          <div class="ms-desc">Jerarquía árbol configurable, archivos S3</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#B45309">
+        <div class="ms-icon">📋</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#B45309">ASS</div>
+          <div class="ms-name">Assessment Service</div>
+          <div class="ms-desc">Notas 1.0–7.0, promedios ponderados, auditoría</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#0F766E">
+        <div class="ms-icon">✅</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#0F766E">ATT</div>
+          <div class="ms-name">Attendance Service</div>
+          <div class="ms-desc">Asistencia por clase, contrato agnóstico al origen</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#DC2626">
+        <div class="ms-icon">📝</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#DC2626">ANN</div>
+          <div class="ms-name">Annotation Service</div>
+          <div class="ms-desc">Anotaciones positivas/negativas, notificación automática</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#B45309">
+        <div class="ms-icon">🔔</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#B45309">NOT</div>
+          <div class="ms-name">Notification Service</div>
+          <div class="ms-desc">Contrato genérico extensible, Strategy por canal</div>
+        </div>
+      </div>
+
+      <div class="ms-card" style="--ms-color:#7C3AED">
+        <div class="ms-icon">📊</div>
+        <div class="ms-info">
+          <div class="ms-abbr" style="color:#7C3AED">RPT</div>
+          <div class="ms-name">Report Service</div>
+          <div class="ms-desc">Reportes JSON/CSV/PDF, acceso read-only cross-schema</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#2563EB"></div>Arquitectónico</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div>Comportamiento</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7C3AED"></div>Estructural</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#B45309"></div>Creacional</div>
+  </div>
+
+  <!-- B1 -->
+  <div class="block" id="b1">
+    <div class="block-eyebrow">BLOQUE 01</div>
+    <div class="block-title">Autenticación y Permisos</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#2563EB;border-color:#BFCFFD;background:#EFF4FF">🔐 AUTH Service</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-AUTH-001</span><span class="req-badge">BE-AUTH-002</span>
+      <span class="req-badge">BE-AUTH-004</span><span class="req-badge">BE-AUTH-005</span>
+      <span class="req-badge">BE-AUTH-006</span><span class="req-badge">BE-AUTH-007</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag arch"><span class="dot"></span>JWT Stateless Auth</span>
+      <span class="ptag behave"><span class="dot"></span>Unix Permission Model</span>
+      <span class="ptag arch"><span class="dot"></span>RBAC Dinámico</span>
+    </div>
+    <p class="desc">
+      El Auth Service combina <strong>autenticación stateless con JWT RS256</strong> (par de claves asimétrico),
+      <strong>roles completamente dinámicos</strong> con seed data mutable, y un <strong>modelo de permisos Unix-style</strong>
+      donde cada par <code>(role_uuid, resource_uuid)</code> tiene un flag numérico <code>r=4 | w=2 | x=1</code>.
+      El permiso efectivo de un usuario es la unión OR a nivel de bits de los flags de todos sus roles.
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>JWT con RS256 permite que cualquier microservicio valide el token usando solo la clave pública — sin llamar al Auth Service en cada request. El modelo Unix de flags por recurso mantiene al Auth Service como infraestructura pura: no conoce la semántica de cada recurso, solo gestiona el número. El dueño del recurso (ej: Course Service) registra sus <code>resource_uuid</code> y decide qué flags tienen significado.</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-AUTH-001</td><td>Registro y autenticación de usuarios</td><td>JWT Stateless · RS256</td></tr>
+        <tr><td>BE-AUTH-002</td><td>Emisión y validación de JWT con claims de roles</td><td>JWT Claims Propagation</td></tr>
+        <tr><td>BE-AUTH-004</td><td>CRUD dinámico de roles</td><td>RBAC Dinámico · Seed Data Pattern</td></tr>
+        <tr><td>BE-AUTH-005</td><td>Modelo de permisos Unix-style por recurso</td><td>Unix Permission Bits · Bitwise OR</td></tr>
+        <tr><td>BE-AUTH-006</td><td>Asignación y revocación de roles</td><td>RBAC · Role Assignment</td></tr>
+        <tr><td>BE-AUTH-007</td><td>CRUD de permisos por rol sobre recursos</td><td>Unix Permission Model · Audit Log</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://quarkus.io/guides/security-jwt" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus JWT</a>
+      <a class="doclink" href="https://smallrye.io/smallrye-jwt/" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>SmallRye JWT</a>
+      <a class="doclink" href="https://quarkus.io/guides/security-authorization" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus RBAC</a>
+      <a class="doclink" href="https://en.wikipedia.org/wiki/File-system_permissions" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Unix Permissions</a>
+    </div>
+  </div>
+
+  <!-- B2 -->
+  <div class="block" id="b2">
+    <div class="block-eyebrow">BLOQUE 02</div>
+    <div class="block-title">Permisos Granulares por Curso</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#0369A1;border-color:#BAE6FD;background:#F0F9FF">📚 CRS Service</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-CRS-002</span><span class="req-badge">BE-CRS-003</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag behave"><span class="dot"></span>Strategy</span>
+      <span class="ptag struct"><span class="dot"></span>Decorator — CDI Interceptor</span>
+    </div>
+    <p class="desc">
+      El Course Service gestiona permisos <strong>contextuales por instancia de recurso</strong>: AUTH define permisos por tipo de recurso abstracto; CRS define si el docente X tiene acceso al <strong>curso concreto Y</strong>.
+      Una tabla <code>course_access(user_id, course_id, access_level)</code> almacena las asignaciones.
+      Un <strong>interceptor CDI</strong> —implementado como Decorator— evalúa el acceso antes de ejecutar cualquier lógica de negocio.
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>El Strategy permite definir dos comportamientos (READ vs WRITE) sin condicionales dispersos en el código. El Decorator en Quarkus se implementa con interceptores CDI: anotando el método con <code>@CourseAccess(level=WRITE)</code>, el interceptor evalúa la tabla de asignaciones antes de continuar, manteniendo la lógica de negocio completamente limpia.</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-CRS-002</td><td>Asignación de docentes con permisos READ/WRITE por curso</td><td>Strategy · CDI Interceptor (Decorator)</td></tr>
+        <tr><td>BE-CRS-003</td><td>Listado de cursos filtrado por docente autenticado</td><td>Specification Pattern</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://quarkus.io/guides/cdi" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus CDI</a>
+      <a class="doclink" href="https://jakarta.ee/specifications/interceptors/" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Jakarta Interceptors</a>
+      <a class="doclink" href="https://refactoring.guru/design-patterns/decorator" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Decorator Pattern</a>
+    </div>
+  </div>
+
+  <!-- B3 -->
+  <div class="block" id="b3">
+    <div class="block-eyebrow">BLOQUE 03</div>
+    <div class="block-title">API Gateway y Comunicación</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#7C3AED;border-color:#DDD6FE;background:#F5F3FF">🔀 API Gateway</span>
+      <span class="ms-chip" style="color:#4B5563;border-color:#E5E7EB;background:#F9FAFB">⚙️ Transversal</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-GW-001</span><span class="req-badge">BE-GW-002</span>
+      <span class="req-badge">BE-GW-003</span><span class="req-badge">BE-GW-004</span>
+      <span class="req-badge">BE-TRV-004</span><span class="req-badge">BE-TRV-005</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag arch"><span class="dot"></span>API Gateway</span>
+      <span class="ptag behave"><span class="dot"></span>Chain of Responsibility</span>
+      <span class="ptag arch"><span class="dot"></span>Correlation ID</span>
+    </div>
+    <p class="desc">
+      El gateway procesa cada request a través de una <strong>cadena de responsabilidades</strong>:
+      validación JWT → rate limiting → inyección de Correlation ID → enrutamiento.
+      Cada eslabón puede cortar el flujo (401/429) o pasarlo al siguiente.
+      El <strong>Correlation ID</strong> (UUID generado en el gateway) se propaga como header interno <code>X-Correlation-Id</code> a todos los microservicios, habilitando trazabilidad completa en CloudWatch y Jaeger.
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>La Chain of Responsibility permite agregar o reordenar eslabones sin modificar el resto del pipeline. En Quarkus se implementa con filtros JAX-RS (<code>@Provider</code> + <code>ContainerRequestFilter</code>) ordenados por prioridad anotada. El Correlation ID es fundamental en arquitecturas distribuidas: sin él, diagnosticar un error que cruza 3 microservicios es inviable.</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-GW-001</td><td>Enrutamiento a microservicios</td><td>API Gateway · Reverse Proxy</td></tr>
+        <tr><td>BE-GW-002</td><td>Validación JWT y propagación de claims</td><td>Chain of Responsibility · Filter Pipeline</td></tr>
+        <tr><td>BE-GW-003</td><td>Rate limiting por IP y usuario</td><td>Token Bucket · Chain of Responsibility</td></tr>
+        <tr><td>BE-GW-004</td><td>Latencia adicional &lt; 20 ms</td><td>Async non-blocking I/O · Vert.x</td></tr>
+        <tr><td>BE-TRV-004</td><td>Logging estructurado con correlationId</td><td>Correlation ID · MDC Logging</td></tr>
+        <tr><td>BE-TRV-005</td><td>Trazabilidad distribuida</td><td>Distributed Tracing · OpenTelemetry</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://quarkus.io/guides/rest" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus REST/JAX-RS</a>
+      <a class="doclink" href="https://quarkus.io/guides/opentelemetry" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus OpenTelemetry</a>
+      <a class="doclink" href="https://refactoring.guru/design-patterns/chain-of-responsibility" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Chain of Responsibility</a>
+    </div>
+  </div>
+
+  <!-- B4 -->
+  <div class="block" id="b4">
+    <div class="block-eyebrow">BLOQUE 04</div>
+    <div class="block-title">Resiliencia y Tolerancia a Fallos</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#B45309;border-color:#FDE68A;background:#FFFBEB">🔔 NOT Service</span>
+      <span class="ms-chip" style="color:#4B5563;border-color:#E5E7EB;background:#F9FAFB">⚙️ Transversal</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-NOT-004</span><span class="req-badge">BE-TRV-001</span>
+      <span class="req-badge">BE-TRV-002</span><span class="req-badge">BE-TRV-003</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag arch"><span class="dot"></span>Circuit Breaker</span>
+      <span class="ptag arch"><span class="dot"></span>Bulkhead</span>
+      <span class="ptag behave"><span class="dot"></span>Retry con Backoff Exponencial</span>
+    </div>
+    <p class="desc">
+      Tres capas complementarias de <strong>SmallRye Fault Tolerance</strong> actúan en conjunto.
+      El <strong>Circuit Breaker</strong> protege de llamadas en cascada: tras N fallos el circuito se abre y el fallback actúa inmediatamente sin llamar al servicio caído.
+      El <strong>Bulkhead</strong> limita la concurrencia por servicio para que un MS lento no consuma todos los threads del pool.
+      El <strong>Retry con backoff exponencial</strong> reintenta operaciones transitorias con intervalos crecientes antes de mover a DLQ.
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>SmallRye Fault Tolerance implementa MicroProfile Fault Tolerance — las tres capas se configuran con anotaciones (<code>@CircuitBreaker</code>, <code>@Bulkhead</code>, <code>@Retry</code>) sin infraestructura adicional y son composables en el mismo método. La combinación Circuit Breaker + Retry es estándar de industria para servicios que dependen de proveedores externos con fallos intermitentes.</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-NOT-004</td><td>Cola de reintento y Circuit Breaker para SMTP</td><td>Circuit Breaker · Retry (backoff exp.) · DLQ</td></tr>
+        <tr><td>BE-TRV-001</td><td>Disponibilidad &gt;= 99.5%</td><td>Circuit Breaker · Health Checks · HPA</td></tr>
+        <tr><td>BE-TRV-002</td><td>Escalabilidad horizontal</td><td>Bulkhead · Kubernetes HPA</td></tr>
+        <tr><td>BE-TRV-003</td><td>Health checks y readiness probes</td><td>Health Check Pattern · Quarkus Health</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://quarkus.io/guides/smallrye-fault-tolerance" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>SmallRye Fault Tolerance</a>
+      <a class="doclink" href="https://quarkus.io/guides/smallrye-health" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus Health</a>
+      <a class="doclink" href="https://microprofile.io/specifications/microprofile-fault-tolerance/" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>MicroProfile FT</a>
+      <a class="doclink" href="https://martinfowler.com/bliki/CircuitBreaker.html" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Fowler: Circuit Breaker</a>
+    </div>
+  </div>
+
+  <!-- B5 -->
+  <div class="block" id="b5">
+    <div class="block-eyebrow">BLOQUE 05</div>
+    <div class="block-title">Mensajería y Notificaciones</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#16A34A;border-color:#BBF7D0;background:#F0FDF4">👨‍🎓 STU Service</span>
+      <span class="ms-chip" style="color:#DC2626;border-color:#FECACA;background:#FEF2F2">📝 ANN Service</span>
+      <span class="ms-chip" style="color:#B45309;border-color:#FDE68A;background:#FFFBEB">🔔 NOT Service</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-STU-002</span><span class="req-badge">BE-STU-004</span>
+      <span class="req-badge">BE-ANN-002</span><span class="req-badge">BE-NOT-001</span>
+      <span class="req-badge">BE-NOT-002</span><span class="req-badge">BE-NOT-003</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag arch"><span class="dot"></span>Publisher / Subscriber</span>
+      <span class="ptag behave"><span class="dot"></span>Strategy — canales de notificación</span>
+      <span class="ptag create"><span class="dot"></span>Factory Method — CDI @Named</span>
+    </div>
+    <p class="desc">
+      El Notification Service consume eventos de RabbitMQ vía <strong>Publisher/Subscriber</strong>.
+      Internamente aplica <strong>Strategy</strong> para seleccionar el canal según el campo <code>notification_type</code>
+      del contrato genérico <code>NotificationRequest</code>.
+      Un <strong>Factory Method</strong> implementado con CDI <code>@Named</code> beans resuelve qué
+      implementación de <code>NotificationStrategy</code> instanciar en runtime, sin condicionales hardcodeados ni redeploy.
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>El Strategy desacopla el "qué enviar" del "cómo enviarlo": agregar SMS o Webhook solo requiere una nueva clase que implemente <code>NotificationStrategy</code> sin tocar el core. El Factory con <code>Instance&lt;NotificationStrategy&gt;</code> de CDI es idiomático en Quarkus: busca el bean <code>@Named("EMAIL_HTML")</code> en el contexto sin if-else ni switch. Al registrar un nuevo tipo en BD, el factory lo resuelve automáticamente si el bean CDI existe.</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-STU-002</td><td>Notificación de bienvenida al crear apoderado</td><td>Publisher/Subscriber · Domain Event</td></tr>
+        <tr><td>BE-STU-004</td><td>Eventos de ciclo de vida del alumno</td><td>Publisher/Subscriber · Domain Event</td></tr>
+        <tr><td>BE-ANN-002</td><td>Notificación de anotación negativa</td><td>Publisher/Subscriber · Domain Event</td></tr>
+        <tr><td>BE-NOT-001</td><td>Contrato genérico NotificationRequest</td><td>Strategy · Value Object</td></tr>
+        <tr><td>BE-NOT-002</td><td>Implementación EMAIL_HTML v1</td><td>Strategy (EmailStrategy) · Template Method</td></tr>
+        <tr><td>BE-NOT-003</td><td>Tipos registrables en BD sin redeploy</td><td>Factory Method · CDI @Named Beans</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://quarkus.io/guides/rabbitmq" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus RabbitMQ</a>
+      <a class="doclink" href="https://refactoring.guru/design-patterns/strategy" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Strategy Pattern</a>
+      <a class="doclink" href="https://refactoring.guru/design-patterns/factory-method" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Factory Method</a>
+      <a class="doclink" href="https://quarkus.io/guides/cdi-reference" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>CDI @Named Beans</a>
+    </div>
+  </div>
+
+  <!-- B6 -->
+  <div class="block" id="b6">
+    <div class="block-eyebrow">BLOQUE 06</div>
+    <div class="block-title">Jerarquía Configurable de Contenido</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#0369A1;border-color:#BAE6FD;background:#F0F9FF">📁 CNT Service</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-CNT-001</span><span class="req-badge">BE-CNT-002</span><span class="req-badge">BE-CNT-003</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag struct"><span class="dot"></span>Composite</span>
+      <span class="ptag arch"><span class="dot"></span>Repository con Caché</span>
+    </div>
+    <p class="desc">
+      La jerarquía se modela con <strong>Composite</strong>: todos los nodos —independientemente de su posición en el árbol— implementan la misma interfaz <code>HierarchyNode</code>.
+      El Content Service no tiene clases Java para "Semestre" o "Clase", solo <code>HierarchyNode</code>.
+      La configuración se carga desde BD en startup y se cachea en memoria. El <strong>Repository con caché</strong> abstrae ese acceso e invalida la caché cuando cambia la configuración del árbol.
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>El Composite es la elección natural para árboles de profundidad variable. Si el administrador agrega un nivel intermedio, cero cambios de código. El nodo raíz y el hoja se identifican por posición en el árbol activo, no por tipo. El Repository con caché evita consultas a BD en cada navegación — el árbol solo se recarga cuando cambia la configuración (cache invalidation por evento).</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-CNT-001</td><td>Jerarquía de árbol configurable globalmente</td><td>Composite · Repository con Caché</td></tr>
+        <tr><td>BE-CNT-002</td><td>CRUD de nodos respetando árbol activo</td><td>Composite (validación padre-hijo)</td></tr>
+        <tr><td>BE-CNT-003</td><td>Carga de archivos en nodo hoja (S3)</td><td>Composite (identificar hoja) · Pre-signed URL</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://refactoring.guru/design-patterns/composite" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Composite Pattern</a>
+      <a class="doclink" href="https://quarkus.io/guides/hibernate-orm-panache" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus Panache</a>
+      <a class="doclink" href="https://quarkus.io/guides/cache" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus Cache</a>
+      <a class="doclink" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>S3 Pre-signed URLs</a>
+    </div>
+  </div>
+
+  <!-- B7 -->
+  <div class="block" id="b7">
+    <div class="block-eyebrow">BLOQUE 07</div>
+    <div class="block-title">Asistencia — Contrato Agnóstico al Origen</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#0F766E;border-color:#99F6E4;background:#F0FDFA">✅ ATT Service</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-ATT-001</span><span class="req-badge">BE-ATT-002</span>
+      <span class="req-badge">BE-ATT-003</span><span class="req-badge">BE-ATT-004</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag struct"><span class="dot"></span>Value Object — inmutable</span>
+      <span class="ptag behave"><span class="dot"></span>State — OPEN → CLOSED</span>
+      <span class="ptag arch"><span class="dot"></span>Open/Closed Principle</span>
+    </div>
+    <p class="desc">
+      El payload se modela como un <strong>Value Object inmutable</strong> (<code>AttendanceRecord</code>) que solo valida los campos obligatorios en construcción. Los campos opcionales <code>capture_method</code> y <code>metadata</code> se almacenan tal cual sin interpretación — el servicio es completamente ciego al origen de los datos.
+      El cierre de una clase se modela con <strong>State Pattern</strong> (transición <code>OPEN → CLOSED</code>), que bloquea cualquier modificación posterior.
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>El Value Object garantiza que si un <code>AttendanceRecord</code> se construyó, es válido — la inmutabilidad elimina mutaciones accidentales en el pipeline. El principio Open/Closed en el contrato de API significa que integrar un nuevo origen (biometría, RFID) no requiere abrir el código del servicio: el contrato ya tiene los puntos de extensión (<code>capture_method</code>, <code>metadata</code>). El State para cierre es más expresivo que un booleano: modela que CLOSED es un estado con comportamiento propio.</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-ATT-001</td><td>Registro de asistencia por clase</td><td>Value Object (AttendanceRecord) · Repository</td></tr>
+        <tr><td>BE-ATT-002</td><td>Cierre de registro de asistencia</td><td>State Pattern (OPEN → CLOSED)</td></tr>
+        <tr><td>BE-ATT-003</td><td>Reporte de inasistencias acumuladas</td><td>Repository · Specification</td></tr>
+        <tr><td>BE-ATT-004</td><td>Contrato agnóstico al origen de datos</td><td>Value Object inmutable · Open/Closed</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://martinfowler.com/bliki/ValueObject.html" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Fowler: Value Object</a>
+      <a class="doclink" href="https://refactoring.guru/design-patterns/state" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>State Pattern</a>
+      <a class="doclink" href="https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Open/Closed Principle</a>
+    </div>
+  </div>
+
+  <!-- B8 -->
+  <div class="block" id="b8">
+    <div class="block-eyebrow">BLOQUE 08</div>
+    <div class="block-title">Reportes Cross-Schema</div>
+    <div class="block-ms">
+      <span class="ms-chip" style="color:#7C3AED;border-color:#DDD6FE;background:#F5F3FF">📊 RPT Service</span>
+    </div>
+    <div class="block-reqs">
+      <span class="req-badge">BE-RPT-001</span><span class="req-badge">BE-RPT-002</span>
+      <span class="req-badge">BE-RPT-003</span><span class="req-badge">BE-RPT-004</span>
+      <span class="req-badge">BE-RPT-006</span><span class="req-badge">INF-DB-001</span>
+    </div>
+    <div class="ptags">
+      <span class="ptag arch"><span class="dot"></span>Repository — read-only cross-schema</span>
+      <span class="ptag behave"><span class="dot"></span>Strategy — formatos de salida</span>
+      <span class="ptag struct"><span class="dot"></span>Facade</span>
+    </div>
+    <p class="desc">
+      Una <strong>Facade</strong> (<code>ReportExecutor</code>) orquesta: cargar la definición del reporte, delegar la extracción a <strong>Repositories read-only</strong> que acceden a los schemas necesarios, y pasar el resultado al <strong>Strategy</strong> de formato correcto:
+      <code>JsonReportStrategy</code>, <code>CsvReportStrategy</code> o <code>PdfReportStrategy</code>.
+      El acceso cross-schema se garantiza mediante credenciales de BD de solo lectura sobre todos los schemas (ADR-001).
+    </p>
+    <div class="rationale">
+      <h3>Por qué estos patrones</h3>
+      <p>La Facade simplifica la interfaz al cliente: un solo endpoint, un solo contrato, independiente de cuántos schemas se consulten. El Strategy para formatos desacopla "qué datos extraer" de "cómo renderizarlos" — la misma definición produce JSON, CSV o PDF sin duplicar lógica. Agregar un nuevo formato (ej: XLSX) solo requiere una nueva clase <code>XlsxReportStrategy</code>, sin tocar el Executor ni el contrato.</p>
+    </div>
+    <table class="req-table">
+      <thead><tr><th>ID</th><th>Requisito</th><th>Patrón</th></tr></thead>
+      <tbody>
+        <tr><td>BE-RPT-001</td><td>Definición y registro de reportes</td><td>Repository · Template Method</td></tr>
+        <tr><td>BE-RPT-002</td><td>Generación en formato JSON</td><td>Strategy (JsonReportStrategy) · Facade</td></tr>
+        <tr><td>BE-RPT-003</td><td>Generación en formato CSV</td><td>Strategy (CsvReportStrategy) · Facade</td></tr>
+        <tr><td>BE-RPT-004</td><td>Generación como PDF (byte[])</td><td>Strategy (PdfReportStrategy) · Facade</td></tr>
+        <tr><td>BE-RPT-006</td><td>Control de acceso estricto a reportes</td><td>RBAC · Audit Log · CDI Interceptor</td></tr>
+        <tr><td>INF-DB-001</td><td>Acceso read-only cross-schema</td><td>Repository (read-only) · Shared DB (ADR-001)</td></tr>
+      </tbody>
+    </table>
+    <div class="doclinks">
+      <a class="doclink" href="https://refactoring.guru/design-patterns/facade" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Facade Pattern</a>
+      <a class="doclink" href="https://refactoring.guru/design-patterns/strategy" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Strategy Pattern</a>
+      <a class="doclink" href="https://quarkus.io/guides/hibernate-orm-panache#repository-pattern" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>Quarkus Repository</a>
+      <a class="doclink" href="https://developers.itextpdf.com/content/itext-7-jump-start-tutorial-java" target="_blank"><svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l3-3M8 4H5M8 7V4" stroke="currentColor" stroke-width="1.2"/></svg>iText 7 PDF</a>
+    </div>
+  </div>
+
+</div><!-- /page-patterns -->
+
+
+<!-- ═══ PAGE: DIAGRAMS ═══ -->
+<div class="page" id="page-diagrams">
+
+  <div class="page-intro">
+    <h1>Diagramas de Secuencia</h1>
+    <p>Un diagrama por bloque temático, mostrando el flujo entre actores, microservicios y la aplicación concreta de cada patrón.</p>
+  </div>
+
+  <div class="diag-block" id="d1">
+    <div class="diag-header">
+      <span class="diag-num">D-01</span>
+      <span class="diag-title">Autenticación JWT y evaluación de permisos Unix-style</span>
+      <div class="diag-ms"><span class="ms-chip" style="color:#2563EB;border-color:#BFCFFD;background:#EFF4FF">🔐 AUTH</span></div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor C as Cliente (Frontend)
+    participant GW as API Gateway
+    participant AS as Auth Service
+    participant MS as Microservicio destino
+
+    C->>GW: POST /auth/login {user, password}
+    GW->>AS: forward request
+    AS->>AS: Validar credenciales
+    AS->>AS: Cargar roles del usuario
+    AS->>AS: Emitir JWT RS256 {sub, roles[], exp}
+    AS-->>GW: 200 {access_token, refresh_token}
+    GW-->>C: 200 {access_token, refresh_token}
+
+    Note over C,MS: Request autenticado posterior
+    C->>GW: GET /api/courses Authorization Bearer token
+    GW->>GW: Validar firma JWT clave pública
+    GW->>GW: Verificar expiración
+    GW->>GW: Extraer claims {sub, roles[]}
+    GW->>GW: Inyectar X-User-Id, X-Roles, X-Correlation-Id
+    GW->>MS: GET /courses + headers internos
+    MS->>MS: Evaluar flags Unix-style OR-ed por roles
+    MS-->>GW: 200 data
+    GW-->>C: 200 data
+    </div></div>
+  </div>
+
+  <div class="diag-block" id="d2">
+    <div class="diag-header">
+      <span class="diag-num">D-02</span>
+      <span class="diag-title">Permisos granulares por curso — CDI Interceptor (Decorator)</span>
+      <div class="diag-ms"><span class="ms-chip" style="color:#0369A1;border-color:#BAE6FD;background:#F0F9FF">📚 CRS</span></div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor D as Docente
+    participant GW as API Gateway
+    participant CS as Course Service
+    participant INT as @CourseAccess Interceptor
+    participant DB as DB schema courses
+
+    D->>GW: POST /api/courses/id/grades Bearer token
+    GW->>GW: Validar JWT, propagar X-User-Id
+    GW->>CS: POST /courses/id/grades + X-User-Id
+    CS->>INT: @CourseAccess(WRITE) activa interceptor
+    INT->>DB: SELECT access_level WHERE user_id=X AND course_id=Y
+    DB-->>INT: access_level = READ
+    INT->>INT: READ menor que WRITE requerido
+    INT-->>CS: AccessDeniedException
+    CS-->>GW: 403 Forbidden
+    GW-->>D: 403 Forbidden
+
+    Note over D,DB: Mismo request con docente que tiene permiso WRITE
+    D->>GW: POST /api/courses/id/grades Bearer token
+    GW->>CS: POST + X-User-Id correcto
+    CS->>INT: @CourseAccess(WRITE) activa interceptor
+    INT->>DB: SELECT access_level WHERE user_id=Z AND course_id=Y
+    DB-->>INT: access_level = WRITE
+    INT->>INT: WRITE OK, continuar
+    INT-->>CS: procede a logica de negocio
+    CS->>DB: INSERT grade record
+    DB-->>CS: OK
+    CS-->>GW: 201 Created
+    GW-->>D: 201 Created
+    </div></div>
+  </div>
+
+  <div class="diag-block" id="d3">
+    <div class="diag-header">
+      <span class="diag-num">D-03</span>
+      <span class="diag-title">API Gateway — Chain of Responsibility + Correlation ID</span>
+      <div class="diag-ms"><span class="ms-chip" style="color:#7C3AED;border-color:#DDD6FE;background:#F5F3FF">🔀 GW</span></div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor C as Cliente
+    participant F1 as Filter JWT Validator
+    participant F2 as Filter Rate Limiter
+    participant F3 as Filter Correlation ID Injector
+    participant R as Router
+    participant MS as Microservicio
+
+    C->>F1: Request HTTP
+    F1->>F1: Header Authorization presente?
+    alt Sin token o token inválido
+        F1-->>C: 401 Unauthorized
+    end
+    F1->>F2: Pasar request con claims extraídos
+    F2->>F2: Token Bucket IP dentro del límite?
+    alt Rate limit excedido
+        F2-->>C: 429 Too Many Requests
+    end
+    F2->>F3: Pasar request
+    F3->>F3: Generar UUID como X-Correlation-Id
+    F3->>F3: Añadir X-User-Id y X-Roles al header
+    F3->>R: Request enriquecido
+    R->>MS: Forward con todos los headers internos
+    MS->>MS: Procesar, loguear con correlationId en MDC
+    MS-->>R: Response
+    R-->>C: Response + X-Correlation-Id en header
+    </div></div>
+  </div>
+
+  <div class="diag-block" id="d4">
+    <div class="diag-header">
+      <span class="diag-num">D-04</span>
+      <span class="diag-title">Resiliencia — Circuit Breaker + Retry con backoff + DLQ</span>
+      <div class="diag-ms"><span class="ms-chip" style="color:#B45309;border-color:#FDE68A;background:#FFFBEB">🔔 NOT</span></div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant ANN as Annotation Service
+    participant RMQ as RabbitMQ
+    participant NS as Notification Service
+    participant SMTP as SMTP Provider
+    participant DLQ as Dead Letter Queue
+
+    ANN->>RMQ: publish NotificationEvent type EMAIL_HTML
+    RMQ->>NS: consume event
+    NS->>NS: @CircuitBreaker estado CLOSED
+    NS->>SMTP: sendEmail intento 1 de 3
+    SMTP-->>NS: 500 Error
+    NS->>NS: @Retry backoff 1s intento 2 de 3
+    NS->>SMTP: sendEmail intento 2 de 3
+    SMTP-->>NS: 500 Error
+    NS->>NS: @Retry backoff 2s intento 3 de 3
+    NS->>SMTP: sendEmail intento 3 de 3
+    SMTP-->>NS: 500 Error
+    NS->>NS: @CircuitBreaker umbral alcanzado estado OPEN
+    NS->>DLQ: mover mensaje a DLQ
+    NS->>NS: emitir alerta CloudWatch
+
+    Note over NS,SMTP: Circuit OPEN, llamadas fallan inmediatamente sin tocar SMTP
+    RMQ->>NS: consume next event
+    NS->>NS: Circuit OPEN fallback directo
+    NS->>DLQ: mensaje directo a DLQ sin llamar SMTP
+
+    Note over NS,SMTP: Tras halfOpenAfter 30s prueba HALF_OPEN
+    NS->>SMTP: probe request
+    SMTP-->>NS: 200 OK
+    NS->>NS: Circuit CLOSED recuperado
+    </div></div>
+  </div>
+
+  <div class="diag-block" id="d5">
+    <div class="diag-header">
+      <span class="diag-num">D-05</span>
+      <span class="diag-title">Mensajería — Publisher/Subscriber + Strategy + Factory CDI</span>
+      <div class="diag-ms">
+        <span class="ms-chip" style="color:#16A34A;border-color:#BBF7D0;background:#F0FDF4">👨‍🎓 STU</span>
+        <span class="ms-chip" style="color:#B45309;border-color:#FDE68A;background:#FFFBEB">🔔 NOT</span>
+      </div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant STU as Student Service
+    participant RMQ as RabbitMQ
+    participant NS as Notification Service
+    participant F as NotificationFactory CDI
+    participant ES as EmailStrategy Named EMAIL_HTML
+    participant SMTP as SMTP SES
+
+    STU->>STU: apoderado creado, emitir domain event
+    STU->>RMQ: publish NotificationEvent type EMAIL_HTML recipient payload
+    RMQ->>NS: consume event
+    NS->>NS: deserializar NotificationRequest
+    NS->>F: resolveStrategy type EMAIL_HTML
+    F->>F: buscar @Named EMAIL_HTML bean en CDI context
+    F-->>NS: EmailStrategy instance
+    NS->>ES: send recipient template_id payload
+    ES->>ES: cargar plantilla HTML
+    ES->>ES: interpolar payload en HTML final
+    ES->>SMTP: sendEmail to subject html
+    SMTP-->>ES: 200 Accepted
+    ES-->>NS: entrega exitosa
+    NS->>NS: registrar métrica de entrega
+    </div></div>
+  </div>
+
+  <div class="diag-block" id="d6">
+    <div class="diag-header">
+      <span class="diag-num">D-06</span>
+      <span class="diag-title">Jerarquía Configurable de Contenido — Composite Pattern</span>
+      <div class="diag-ms"><span class="ms-chip" style="color:#0369A1;border-color:#BAE6FD;background:#F0F9FF">📁 CNT</span></div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor A as Administrador
+    participant CS as Content Service
+    participant TR as HierarchyTreeRepository cache
+    participant DB as DB schema content
+    participant S3 as Amazon S3
+
+    Note over CS,DB: Startup cargar árbol configurable en memoria
+    CS->>TR: loadTree()
+    TR->>DB: SELECT hierarchy_levels ORDER BY position
+    DB-->>TR: [{name Semestre order 1}, {name Asignatura order 2}, ...]
+    TR->>TR: construir HierarchyNode[] y cachear
+    TR-->>CS: árbol listo en memoria
+
+    A->>CS: POST /content/nodes level Asignatura parent semestre-2024 name Matematicas
+    CS->>TR: validateParentLevel parentId levelId
+    TR->>TR: Semestre.order + 1 == Asignatura.order OK
+    TR-->>CS: validación correcta
+    CS->>DB: INSERT content_node
+    DB-->>CS: node creado
+
+    A->>CS: POST /content/files nodeId clase-uuid file
+    CS->>TR: isLeafNode nodeId
+    TR->>TR: HierarchyNode.children isEmpty OK es nodo hoja
+    TR-->>CS: true es hoja
+    CS->>S3: upload file key path/clase-uuid/filename
+    S3-->>CS: ETag OK
+    CS->>DB: INSERT file_reference
+    CS-->>A: 201 presigned_url
+    </div></div>
+  </div>
+
+  <div class="diag-block" id="d7">
+    <div class="diag-header">
+      <span class="diag-num">D-07</span>
+      <span class="diag-title">Asistencia — Value Object inmutable + Contrato Agnóstico al Origen</span>
+      <div class="diag-ms"><span class="ms-chip" style="color:#0F766E;border-color:#99F6E4;background:#F0FDFA">✅ ATT</span></div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor M as Cliente Manual vía Frontend
+    actor B as Cliente Biométrico módulo externo futuro
+    participant AS as Attendance Service
+    participant VO as AttendanceRecord Value Object
+    participant DB as DB schema attendance
+
+    Note over M,DB: Registro manual, mismo contrato HTTP
+    M->>AS: POST /attendance {student_id, class_id, timestamp, status PRESENT, capture_method MANUAL}
+    AS->>VO: AttendanceRecord.of todos los campos
+    VO->>VO: validar campos obligatorios OK
+    VO->>VO: capture_method almacenado sin interpretación
+    VO-->>AS: AttendanceRecord válido e inmutable
+    AS->>DB: persist record
+    DB-->>AS: OK
+    AS-->>M: 201 Created
+
+    Note over B,DB: Registro biométrico futuro, mismo endpoint mismo contrato
+    B->>B: capturar huella, identificar student_id
+    B->>AS: POST /attendance {student_id, class_id, timestamp, status PRESENT, capture_method FINGERPRINT, metadata {device_id, confidence 0.98}}
+    AS->>VO: AttendanceRecord.of todos los campos
+    VO->>VO: validar obligatorios OK
+    VO->>VO: metadata almacenado as-is sin interpretación
+    VO-->>AS: AttendanceRecord válido e inmutable
+    AS->>DB: persist record
+    DB-->>AS: OK
+    AS-->>B: 201 Created
+    Note over AS: El MS no procesó capture_method ni metadata en ningún caso
+    </div></div>
+  </div>
+
+  <div class="diag-block" id="d8">
+    <div class="diag-header">
+      <span class="diag-num">D-08</span>
+      <span class="diag-title">Reportes Cross-Schema — Repository + Strategy de formatos + Facade</span>
+      <div class="diag-ms"><span class="ms-chip" style="color:#7C3AED;border-color:#DDD6FE;background:#F5F3FF">📊 RPT</span></div>
+    </div>
+    <div class="diag-body"><div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as Usuario Admin
+    participant GW as API Gateway
+    participant RPT as ReportExecutor Facade
+    participant RR as ReadRepositories cross-schema
+    participant STR as ReportStrategy
+    participant DB as RDS read-only schemas
+
+    U->>GW: POST /api/reports/id/execute {format PDF, params {curso 4A, periodo 2024-1}}
+    GW->>GW: Validar JWT + permiso sobre report_id
+    GW->>RPT: execute report_id PDF params
+    RPT->>RPT: cargar ReportDefinition desde BD
+    RPT->>RR: fetchData sources [assessment, attendance] params
+    RR->>DB: SELECT grades FROM assessment.grades WHERE curso=4A AND periodo=2024-1
+    DB-->>RR: grades[]
+    RR->>DB: SELECT records FROM attendance.records WHERE curso=4A AND periodo=2024-1
+    DB-->>RR: attendance[]
+    RR-->>RPT: data agregada
+    RPT->>STR: resolveStrategy format PDF -> PdfReportStrategy
+    STR->>STR: render data con template iText
+    STR-->>RPT: byte[] PDF
+    RPT->>RPT: log auditoría user report_id format timestamp
+    RPT-->>GW: 200 byte[] Content-Type application/pdf
+    GW-->>U: PDF descargable
+    </div></div>
+  </div>
+
+</div><!-- /page-diagrams -->
+</main>
+</div><!-- /shell -->
+
+<script>
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.getAttribute('onclick').includes("'" + name + "'"));
+  });
+}
+
+function setActive(el) {
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Scroll spy
+const ids = ['b1','b2','b3','b4','b5','b6','b7','b8','d1','d2','d3','d4','d5','d6','d7','d8'];
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      document.querySelectorAll('.nav-link').forEach(l => {
+        if ((l.getAttribute('href') || '') === '#' + e.target.id) {
+          document.querySelectorAll('.nav-link').forEach(x => x.classList.remove('active'));
+          l.classList.add('active');
+        }
+      });
+    }
+  });
+}, { threshold: 0.25, rootMargin: '-60px 0px -55% 0px' });
+
+ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'default',
+  themeVariables: {
+    primaryColor:        '#EFF4FF',
+    primaryTextColor:    '#1A1D23',
+    primaryBorderColor:  '#BFCFFD',
+    lineColor:           '#6B7280',
+    secondaryColor:      '#F4F5F7',
+    tertiaryColor:       '#F9FAFB',
+    background:          '#FFFFFF',
+    mainBkg:             '#F4F5F7',
+    nodeBorder:          '#E2E4E9',
+    clusterBkg:          '#F4F5F7',
+    titleColor:          '#1A1D23',
+    edgeLabelBackground: '#FFFFFF',
+    actorBkg:            '#EFF4FF',
+    actorBorder:         '#2563EB',
+    actorTextColor:      '#1A1D23',
+    actorLineColor:      '#C8CBD5',
+    signalColor:         '#4B5263',
+    signalTextColor:     '#1A1D23',
+    labelBoxBkgColor:    '#F4F5F7',
+    labelBoxBorderColor: '#E2E4E9',
+    labelTextColor:      '#1A1D23',
+    loopTextColor:       '#4B5263',
+    noteBorderColor:     '#B45309',
+    noteBkgColor:        '#FFFBEB',
+    noteTextColor:       '#92400E',
+    activationBorderColor: '#2563EB',
+    activationBkgColor:  '#EFF4FF',
+    sequenceNumberColor: '#2563EB',
+    fontFamily:          'Inter, system-ui, sans-serif',
+    fontSize:            '13px'
+  }
+});
+</script>
+</body>
+</html>

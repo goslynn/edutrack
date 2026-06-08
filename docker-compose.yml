@@ -1,0 +1,230 @@
+# EduTrack — orquestación global (ÚNICA fuente de verdad del stack local)
+#
+# Este es el único docker-compose del repo. Levanta TODO el stack en orden de
+# dependencias (database + gateway → auth → attendance / student → front); el
+# orden lo garantizan los `depends_on: condition: service_healthy`. Los compose
+# por-subdirectorio fueron eliminados: cualquier flujo sale de aquí
+# (stack completo con `docker compose up`, o un servicio aislado con
+# `docker compose up <svc>` — Compose arrastra sus dependencias).
+#
+# ── Contrato (1): cada parte del proyecto se despliega como imagen Docker ────────
+#   Todo servicio propio declara `build:` + `image: edutrack/<svc>:local`. La base
+#   de datos usa una imagen oficial. No hay "partes" sin imagen.
+#
+# ── Paths agnósticos (2): el NOMBRE del directorio ya no es contrato ─────────────
+#   El build context de cada servicio es una variable con default al layout actual
+#   (`${AUTH_CONTEXT:-./auth}`, …). Un dev puede reubicar un servicio por env sin
+#   tocar este archivo. (El contrato de discovery —1er segmento del path = nombre
+#   del servicio— sigue vigente; lo que deja de importar es el nombre de la CARPETA.)
+#
+# ── Plantillas (3): anchors YAML reutilizados por los MS Quarkus ─────────────────
+#   `&ms-base`, `&ms-healthcheck`, `&depends-db`, `&ms-dockerfile`. El `<<:` hace
+#   shallow-merge: si un servicio redefine una clave la REEMPLAZA (no fusiona los
+#   mapas anidados), por eso los que dependen también de `auth` fusionan a mano con
+#   `<<: *depends-db` dentro de su propio `depends_on`.
+#
+# ── Variables (4): default para lo no sensible, .env OBLIGATORIO para secretos ───
+#   Lo no crítico lleva `${VAR:-default}`. Los secretos NO tienen default: se
+#   exigen con `${VAR:?...}` ⇒ compose ABORTA si faltan, forzando a definirlos en
+#   `.env` (ver .env.example). Además cada MS hace `env_file: ./.env`, así que TODA
+#   variable del archivo se inyecta al contenedor, la conozca este compose o no
+#   (no hace falta re-declararla en `environment`). `./.env` debe existir.
+#
+# ── Llaves RS256 (5): un único `.certs/` en la raíz, inyectado por montaje ───────
+#   Auth firma (privada + pública), el gateway valida (pública). Ambos montan el
+#   MISMO `${EDUTRACK_CERTS_DIR:-./.certs}` read-only en /certs; ya no hay copias
+#   en auth/ ni infra/. Las llaves son archivos físicos (gitignored): nunca van en
+#   la imagen ni en `.env` (compose no soporta PEM multilínea). El gateway carga la
+#   pública a una env var con su entrypoint; SmallRye (auth) la lee por `file:`.
+#
+# ── Prerrequisitos ──────────────────────────────────────────────────────────────
+#   1. PostgreSQL del host detenido (este stack publica 5432).
+#   2. Llaves RS256 presentes en ./.certs (privateKey.pem + publicKey.pem).
+#   3. Artefactos Quarkus empaquetados (Dockerfile.jvm copia target/quarkus-app/):
+#        for s in auth attendance student; do (cd $s && ./mvnw -q package -DskipTests); done
+#      (edutrack-ms-commons ya instalado en ~/.m2).
+#
+# ── Arranque ────────────────────────────────────────────────────────────────────
+#   cp .env.example .env            # y completar DB_PASSWORD / ADMIN_PASSWORD
+#   docker compose up -d --build
+#   docker compose down             # conserva el volumen de la DB
+#   docker compose down -v          # resetea la DB
+
+# ── Plantillas reutilizables (Compose ignora las claves `x-*`) ──────────────────
+x-ms-dockerfile: &ms-dockerfile src/main/docker/Dockerfile.jvm
+
+x-ms-healthcheck: &ms-healthcheck
+  test: ["CMD", "curl", "-fsS", "http://localhost:8080/q/health/ready"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+x-depends-db: &depends-db
+  database:
+    condition: service_healthy
+
+# Base común a todo microservicio Quarkus. NO incluye build/image/puertos/nombres
+#   (varían por servicio); sí lo idéntico: env_file, red, política de reinicio y
+#   healthcheck. Cada MS hace `<<: *ms-base` y agrega lo suyo.
+x-ms-base: &ms-base
+  env_file: [./.env]
+  networks: [edutrack]
+  restart: on-failure
+  healthcheck: *ms-healthcheck
+
+services:
+
+  # ── Base de datos: instancia única compartida (schema-per-service vía Flyway) ──
+  database:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: ${DB_CONTAINER_NAME:-postgres}
+    hostname: ${DB_CONTAINER_NAME:-postgres}
+    environment:
+      POSTGRES_DB: ${DB_NAME:-edutrack_local}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      # Secreto: sin default. Debe venir de .env o compose aborta.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD es obligatorio — definelo en .env}
+      # Datadir en subdir del volumen: initdb opera sobre un dir limpio aunque el
+      #   volumen traiga lost+found u otros restos.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # Publicado al host para el dev nativo (localhost:5432) y herramientas (psql).
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      edutrack:
+        aliases: [postgres, database]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-edutrack_local}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── API Gateway: punto de entrada único; sin dep dura ⇒ arranca primero ───────
+  gateway:
+    build:
+      context: ${GATEWAY_CONTEXT:-./infra/gateway}
+      dockerfile: Dockerfile
+    image: edutrack/gateway:local
+    environment:
+      UPSTREAM_HOST_PATTERN: "{service}:8080"
+      JWKS_SERVICE: "auth"
+      # Path interno (determinista) de la pública dentro del volumen montado; el
+      #   entrypoint carga su contenido en JWT_PUBLIC_KEY antes de arrancar nginx.
+      JWT_PUBLIC_KEY_FILE: /certs/publicKey.pem
+    volumes:
+      - ${EDUTRACK_CERTS_DIR:-./.certs}:/certs:ro
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    networks: [edutrack]
+    # Liveness real del gateway: curl por 127.0.0.1 a `/` ⇒ exit 0 si nginx
+    #   responde (cualquier código HTTP), sin acoplar su salud a la de upstreams.
+    #   (localhost resolvería a ::1 y nginx hace `listen 8080` solo en IPv4.)
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: on-failure
+
+  # ── Auth: emisor de JWT (firma RS256) y escritor de la DB; monta privada+pública ─
+  auth:
+    <<: *ms-base
+    build:
+      context: ${AUTH_CONTEXT:-./auth}
+      dockerfile: *ms-dockerfile
+    image: edutrack/auth:local
+    container_name: auth
+    hostname: auth
+    environment:
+      # Esquema file: obligatorio (SmallRye resuelve la location como URL; un path
+      #   sin esquema falla con "MalformedURLException: no protocol").
+      JWT_PRIVATE_KEY_LOCATION: file:/certs/privateKey.pem
+      JWT_PUBLIC_KEY_LOCATION: file:/certs/publicKey.pem
+    volumes:
+      - ${EDUTRACK_CERTS_DIR:-./.certs}:/certs:ro
+    ports:
+      - "${AUTH_PORT:-8081}:8080"
+    depends_on:
+      <<: *depends-db
+
+  # ── Attendance: llama a auth (commons AuthClient) ⇒ depende de auth healthy ────
+  attendance:
+    <<: *ms-base
+    build:
+      context: ${ATTENDANCE_CONTEXT:-./attendance}
+      dockerfile: *ms-dockerfile
+    image: edutrack/attendance:local
+    container_name: attendance
+    hostname: attendance
+    ports:
+      - "${ATTENDANCE_PORT:-8082}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+  # ── Student: datasource env-driven (DB_*), mismo contrato que attendance ──────
+  student:
+    <<: *ms-base
+    build:
+      context: ${STUDENT_CONTEXT:-./student}
+      dockerfile: *ms-dockerfile
+    image: edutrack/student:local
+    container_name: student
+    hostname: student
+    ports:
+      - "${STUDENT_PORT:-8083}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+  # ── Frontend: Vite dev. El navegador (no el contenedor) golpea el gateway en el
+  #   host, por eso NO va en la red `edutrack` (lo alcanza por localhost). ────────
+  front:
+    build:
+      context: ${FRONT_CONTEXT:-./front}
+      dockerfile: Dockerfile
+    image: edutrack/web:local
+    container_name: edutrack-web
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - CI=true
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8080}
+    volumes:
+      - ${FRONT_CONTEXT:-./front}/src:/app/src
+      - ${FRONT_CONTEXT:-./front}/public:/app/public
+      - ${FRONT_CONTEXT:-./front}/index.html:/app/index.html
+      - ${FRONT_CONTEXT:-./front}/package.json:/app/package.json
+      - ${FRONT_CONTEXT:-./front}/pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - app-node-modules:/app/node_modules
+      - app-pnpm-store:/app/.pnpm-store
+    ports:
+      - "${FRONT_PORT:-5173}:5173"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  db_data:
+    name: ${DB_VOLUME:-edutrack_pgdata}
+  app-node-modules:
+  app-pnpm-store:
+
+networks:
+  # Este compose POSEE la red. Subred/gateway fijos (dev) para que un `compose
+  #   down` no reasigne otra subred entre arranques.
+  edutrack:
+    name: ${EDUTRACK_NETWORK:-edutrack}
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
+          gateway: 172.18.0.1

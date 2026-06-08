@@ -1,0 +1,20 @@
+[submodule "attendance"]
+	path = attendance
+	url = git@github.com:Ckrlos/attendance-ms.git
+	branch = master
+[submodule "auth"]
+	path = auth
+	url = git@github.com:goslynn/edutrack-ms-auth.git
+	branch = master
+[submodule "commons"]
+	path = commons
+	url = git@github.com:goslynn/edutrack-ms-commons.git
+	branch = master
+[submodule "front"]
+	path = front
+	url = git@github.com:goslynn/edutrack-frontend.git
+	branch = master
+[submodule "infra"]
+	path = infra
+	url = git@github.com:goslynn/edutrack-infra.git
+	branch = flyio

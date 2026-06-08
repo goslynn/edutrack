@@ -1,0 +1,4 @@
+# Secretos y llaves: NUNCA se versionan (ver .env.example como plantilla).
+.env
+.certs/
+*.pem

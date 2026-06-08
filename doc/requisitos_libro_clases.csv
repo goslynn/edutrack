@@ -1,0 +1,144 @@
+EduTrack – Libro de Clases Digital  |  Matriz de Requisitos v2.2  |  Colegio Bernardo O'Higgins,,,,,,,,,,,
+DSY1106 – Desarrollo Fullstack III  |  Evaluación Parcial N°1  |  Abril 2026  |  🟨 NEW   🟦 MOD   − sin cambio  |  ADR ✅ = decisión cerrada,,,,,,,,,,,
+#,Grupo,Subgrupo,ID,Chg,Tipo,Nombre,Descripción,Criterio de Aceptación,Prioridad,Estado,Notas / Dependencias
+▌  BACKEND,,,,,,,,,,,
+    Auth Service,,,,,,,,,,,
+1,Backend,Auth Service,BE-AUTH-001,MOD,Funcional,Registro y autenticación de usuarios,Registrar usuarios con credenciales; autenticarlos y emitir JWT firmado. Roles y permisos se resuelven en emisión del token.,"Login exitoso → JWT con claims: sub, roles[], exp. Credenciales inválidas → 401.",Alta,Pendiente,
+2,Backend,Auth Service,BE-AUTH-002,MOD,Funcional,Emisión y validación de JWT con claims de roles,El token incluye el listado de roles del usuario. API Gateway valida firma y expiración en cada request.,Token expirado → 401. Rol incorrecto para endpoint protegido → 403.,Alta,Pendiente,Algoritmo RS256
+3,Backend,Auth Service,BE-AUTH-003,−,Funcional,Refresh token,Emitir refresh tokens de larga duración para renovar access tokens. Refresh tokens son revocables.,Refresh válido → nuevo access token. Refresh revocado → 403.,Media,Pendiente,
+4,Backend,Auth Service,BE-AUTH-004,NEW,Funcional,CRUD dinámico de roles,"Crear, leer, actualizar y eliminar roles con nombre y descripción. Roles predefinidos (DOCENTE, ADMIN, SUPERUSER) vienen como seed data mutable. Se pueden crear roles adicionales sin límite.",Rol eliminado no asignable. Seed presente en setup. No se puede eliminar último SUPERUSER activo.,Alta,Pendiente,Seed data en bootstrap
+5,Backend,Auth Service,BE-AUTH-005,NEW,Funcional,Modelo de permisos Unix-style por recurso genérico,"Permisos como flags numéricos (r=4, w=2, x=1) por par (role_uuid, resource_uuid). resource_uuid es opaco en Auth; el MS dueño registra sus propios resource_uuids. Permiso efectivo = unión de flags de todos los roles del usuario.",Flag r=4 → puede leer. Sin flag w=2 → 403 en escritura. Unión de flags de múltiples roles evaluada correctamente.,Alta,Pendiente,resource_uuid opaco en Auth Service
+6,Backend,Auth Service,BE-AUTH-006,MOD,Funcional,Asignación y revocación de roles a usuarios,Endpoint para asignar/revocar roles a un usuario. Permisos granulares por usuario individual (ej: qué docente accede a qué curso) se delegan al MS de dominio correspondiente.,Asignación refleja en el siguiente JWT. Revocación invalida sesiones tras TTL.,Alta,Pendiente,Permisos por usuario: fuera de scope de Auth Service
+7,Backend,Auth Service,BE-AUTH-007,NEW,Funcional,CRUD de permisos por rol sobre recursos,"Asociar, actualizar y revocar permisos (valor numérico Unix) sobre un resource_uuid a un rol dado.",Permiso actualizado refleja en el siguiente token. Historial de cambios auditable.,Alta,Pendiente,
+8,Backend,Auth Service,BE-AUTH-008,−,No Funcional,Tiempo de respuesta de autenticación < 500 ms,El endpoint de login debe responder en < 500 ms bajo carga normal.,p95 < 500 ms con 100 usuarios concurrentes.,Media,Pendiente,
+    Course Service,,,,,,,,,,,
+9,Backend,Course Service,BE-CRS-001,−,Funcional,CRUD de cursos,"Crear, leer, actualizar y eliminar cursos. Eliminación lógica.",Curso eliminado no aparece en listado activo. Historial preservado.,Alta,Pendiente,
+10,Backend,Course Service,BE-CRS-002,MOD,Funcional,Asignación de docentes con permisos granulares por curso,"Course Service gestiona la relación docente-curso con nivel de acceso (lectura/escritura). Este es el permiso granular por usuario en contexto de curso, complementario al modelo de roles de Auth Service.",Docente con escritura puede registrar notas. Solo lectura → 403 en escritura.,Alta,Pendiente,Permiso granular por usuario delegado a este servicio
+11,Backend,Course Service,BE-CRS-003,−,Funcional,Listado de cursos filtrado por docente autenticado,Retornar solo los cursos a los que el docente tiene acceso según asignaciones en este servicio.,Docente A no ve cursos de Docente B sin asignación explícita.,Alta,Pendiente,
+    Student Service,,,,,,,,,,,
+12,Backend,Student Service,BE-STU-001,−,Funcional,Registro de alumnos,"CRUD con RUT, nombre, apellido, fecha de nacimiento, curso asignado. Validación de RUT chileno.",RUT duplicado → 409. RUT inválido → 422.,Alta,Pendiente,
+13,Backend,Student Service,BE-STU-002,−,Funcional,Registro de apoderados,"Asociar apoderados a cada alumno. Al crear, publicar evento de bienvenida.",Apoderado creado dispara evento async a Notification Service.,Alta,Pendiente,Evento RabbitMQ
+14,Backend,Student Service,BE-STU-003,−,Funcional,Traslado de alumno entre cursos,Reasignar alumno conservando historial académico.,Notas y asistencia previas permanecen asociadas al alumno.,Media,Pendiente,
+15,Backend,Student Service,BE-STU-004,−,No Funcional,Publicación de eventos de ciclo de vida del alumno,Publicar eventos de creación/eliminación/traslado para consistencia en servicios dependientes.,Alumno eliminado genera evento. Attendance Service deja de aceptar registros para ese alumno.,Alta,Pendiente,Evento RabbitMQ
+    Content Service,,,,,,,,,,,
+16,Backend,Content Service,BE-CNT-001,NEW,Funcional,Jerarquía de contenido configurable (árbol global),"Estructura jerárquica del contenido definida como árbol de nodos configurables globalmente. Cada nodo: nombre, descripción y orden. Todos los nodos configurables (incluidos raíz y hoja). Seed: Semestre > Asignatura > Unidad > Clase.","Se puede crear, reordenar y renombrar cualquier nivel. Seed precargado en bootstrap. Cambios no destructivos.",Alta,Pendiente,Jerarquía global — no por curso
+17,Backend,Content Service,BE-CNT-002,MOD,Funcional,CRUD de nodos de contenido según jerarquía configurada,"Crear, leer, actualizar y eliminar instancias de cada nivel jerárquico. Validación padre-hijo respeta el árbol activo.",No es posible crear nodo de nivel N sin padre de nivel N-1.,Alta,Pendiente,
+18,Backend,Content Service,BE-CNT-003,−,Funcional,Carga y descarga de archivos (S3),Subir archivos en nodo hoja. Generar URLs pre-firmadas para descarga segura.,URL pre-firmada expira en tiempo configurable. Archivo inaccesible sin URL válida.,Alta,Pendiente,Integración AWS S3
+19,Backend,Content Service,BE-CNT-004,−,No Funcional,Tamaño máximo de archivo 500 MB,Rechazar archivos > 500 MB.,Upload de 501 MB → 413 con mensaje descriptivo.,Media,Pendiente,
+    Assessment Service,,,,,,,,,,,
+20,Backend,Assessment Service,BE-ASS-001,−,Funcional,Registro de evaluaciones y notas,"Registrar evaluaciones con nombre, fecha, ponderación y nota (1.0–7.0) por alumno y asignatura.",Nota fuera de rango → 422.,Alta,Pendiente,Escala chilena
+21,Backend,Assessment Service,BE-ASS-002,−,Funcional,Cálculo de promedio ponderado,Calcular y retornar promedio ponderado por asignatura y período.,Promedio correcto validado con casos de prueba documentados.,Alta,Pendiente,
+22,Backend,Assessment Service,BE-ASS-003,−,Funcional,Historial de modificaciones de notas (auditoría inmutable),"Log de cambios: usuario, timestamp, valor anterior, valor nuevo. No modificable.",Log disponible para ADMIN/SUPERUSER. Docente no puede borrar log.,Alta,Pendiente,
+23,Backend,Assessment Service,BE-ASS-004,−,No Funcional,Integridad referencial con Student Service,No se puede registrar nota para alumno inexistente.,Nota para alumno inexistente → 404.,Alta,Pendiente,
+    Attendance Service,,,,,,,,,,,
+24,Backend,Attendance Service,BE-ATT-001,MOD,Funcional,Registro de asistencia por clase,"Registrar presencia/ausencia/justificado de cada alumno por clase, identificando al alumno por su ID.",Registro duplicado para misma clase y alumno → 409.,Alta,Pendiente,
+25,Backend,Attendance Service,BE-ATT-002,−,Funcional,Cierre de registro de asistencia,"El docente puede cerrar el registro de una clase, impidiendo modificaciones posteriores.",Registro cerrado → 403 ante cualquier intento de modificación.,Media,Pendiente,
+26,Backend,Attendance Service,BE-ATT-003,−,Funcional,Reporte de inasistencias acumuladas,Calcular porcentaje de asistencia acumulada por alumno y período. Alerta si < 85%.,Porcentaje correcto con hasta 3 decimales.,Media,Pendiente,
+27,Backend,Attendance Service,BE-ATT-004,MOD,Funcional,Contrato de API de asistencia agnóstico al origen de datos,"El Attendance Service define un contrato de entrada y salida claro, flexible y completamente agnóstico al mecanismo de captura. El servicio no tiene ningún conocimiento ni dependencia de sistemas externos.
+
+Payload de entrada normalizado:
+  - student_id (UUID)
+  - class_id (UUID)
+  - timestamp (ISO 8601)
+  - status: PRESENT | ABSENT | JUSTIFIED
+  - capture_method (string, opcional): campo informativo; el MS no lo procesa ni valida su contenido
+  - metadata (mapa clave-valor, opcional): almacenado tal cual sin interpretación
+
+Cualquier integración futura (biometría, RFID, etc.) se construye como módulo cliente EXTERNO e independiente que consume este contrato como cualquier otro cliente HTTP.",POST /attendance con payload completo → 201 Created. capture_method ignorado en lógica de negocio. metadata almacenado sin interpretación. Contrato documentado en OpenAPI 3.0.,Alta,Pendiente,El Adapter biométrico (si se implementa) será módulo cliente EXTERNO. El MS no sabe nada de biometría.
+    Annotation Service,,,,,,,,,,,
+28,Backend,Annotation Service,BE-ANN-001,−,Funcional,Registro de anotaciones por alumno,"Registrar anotaciones positivas o negativas vinculadas a alumno, docente y fecha.",Anotación sin tipo → 422.,Alta,Pendiente,
+29,Backend,Annotation Service,BE-ANN-002,−,Funcional,Notificación de anotación negativa a apoderado,"Al registrar anotación negativa, publicar evento async a Notification Service.",Apoderado recibe notificación en < 5 min.,Alta,Pendiente,Evento RabbitMQ
+    Notification Service,,,,,,,,,,,
+30,Backend,Notification Service,BE-NOT-001,NEW,Funcional,Contrato genérico NotificationRequest (Strategy Pattern),"Contrato de entrada estandarizado: notification_type (enum), recipient_id, template_id, payload (mapa clave-valor). notification_type determina la estrategia internamente. El contrato no cambia al agregar nuevos tipos.",Type=EMAIL_HTML → procesado por EmailStrategy. Type desconocido → 422. Documentado en OpenAPI.,Alta,Pendiente,Strategy Pattern. Extensible sin modificar el contrato.
+31,Backend,Notification Service,BE-NOT-002,MOD,Funcional,Implementación de estrategia EMAIL_HTML (v1),En v1 el único tipo soportado es EMAIL_HTML. Envía correos HTML con plantillas e interpolación del payload.,Correo enviado en < 5 min. Plantillas parametrizables sin redeploy.,Alta,Pendiente,SMTP / AWS SES
+32,Backend,Notification Service,BE-NOT-003,NEW,Funcional,Registro de tipos de notificación disponibles,"CRUD de tipos con estrategia asociada, plantilla y descripción. Nuevos tipos registrables sin modificar código.",Nuevo tipo en BD disponible en enum sin redeploy.,Media,Pendiente,Requiere implementación concreta de la estrategia
+33,Backend,Notification Service,BE-NOT-004,−,Funcional,Cola de reintento y Circuit Breaker,"Si proveedor SMTP falla, notificaciones se encolan con backoff exponencial. Tras N fallos → DLQ + alerta.",Tras 3 reintentos → DLQ. Alerta en CloudWatch.,Alta,Pendiente,SmallRye Fault Tolerance
+34,Backend,Notification Service,BE-NOT-005,−,No Funcional,Tasa de entrega >= 98% mensual,Tasa de entrega mensual >= 98%.,Dashboard con métricas. < 98% genera alerta.,Media,Pendiente,
+    Report Service,,,,,,,,,,,
+35,Backend,Report Service,BE-RPT-001,NEW,Funcional,Definición y registro de reportes,"CRUD de definiciones de reporte: nombre, descripción, fuentes de datos, parámetros y formatos soportados (JSON, CSV, PDF). Solo ADMIN/SUPERUSER puede gestionar definiciones.",Reporte definido persiste en BD. Solo roles autorizados crean/modifican definiciones.,Alta,Pendiente,Protección estricta: RBAC sobre gestión de definiciones
+36,Backend,Report Service,BE-RPT-002,NEW,Funcional,Generación de reporte en formato JSON,Ejecutar reporte y retornar resultado como JSON estructurado en respuesta HTTP.,Reporte generado correctamente. Tiempo < 10 s para reportes simples.,Alta,Pendiente,
+37,Backend,Report Service,BE-RPT-003,NEW,Funcional,Generación de reporte en formato CSV,Ejecutar reporte y retornar .csv como descarga (Content-Disposition: attachment).,CSV con headers correctos y encoding UTF-8 con BOM para compatibilidad Excel.,Alta,Pendiente,
+38,Backend,Report Service,BE-RPT-004,NEW,Funcional,Generación de reporte como PDF renderizado (byte[]),Ejecutar reporte y retornar PDF como byte[] (Content-Type: application/pdf).,PDF generado correctamente y descargable.,Alta,Pendiente,iText / Apache PDFBox
+39,Backend,Report Service,BE-RPT-005,MOD,Funcional,"Shared DB, schemas separados ","DECISIÓN: Base de datos compartida (una única instancia Amazon RDS / PostgreSQL) con schemas separados por microservicio.
+
+JUSTIFICACIÓN:
+El Report Service necesita acceso cross-dominio a datos de múltiples MS para generar reportes consolidados. La opción C resuelve esto de forma directa sin infraestructura adicional, otorgando al Report Service credenciales de solo lectura sobre todos los schemas.
+
+AISLAMIENTO TÉCNICO (no de honor):
+  - Cada MS tiene credenciales de BD propias con acceso EXCLUSIVO a su schema.
+  - Ningún MS puede acceder al schema de otro (restricción a nivel de usuario de BD en RDS).
+  - Report Service tiene credenciales adicionales de SOLO LECTURA sobre todos los schemas.
+
+TRADE-OFF ACEPTADO:
+  - Las migraciones de schema deben coordinarse entre el equipo para evitar conflictos.
+  - Menor autonomía de despliegue de schemas respecto al patrón database-per-service original.
+  - Acoplamiento estructural a nivel de BD: aceptado dado el tamaño del proyecto y el equipo.",Cada MS conecta exclusivamente a su schema (verificado con credenciales de BD separadas). Report Service accede en read-only a schemas ajenos. Migraciones versionadas con Flyway/Liquibase. Documentado en repositorio.,Alta,,Reemplaza el patrón database-per-service original. Ver también INF-DB-001.
+40,Backend,Report Service,BE-RPT-006,NEW,No Funcional,Control de acceso estricto a reportes,Solo roles con permiso explícito sobre resource_uuid del reporte pueden ejecutarlo. Toda ejecución queda en log de auditoría.,"Sin permiso → 403. Log incluye: usuario, reporte, timestamp, formato solicitado.",Alta,Pendiente,Integración con modelo permisos Auth Service
+    API Gateway,,,,,,,,,,,
+41,Backend,API Gateway,BE-GW-001,−,Funcional,Enrutamiento de requests a microservicios,Enrutar cada request al MS correspondiente según path y método HTTP.,/api/courses → Course Service. /api/students → Student Service.,Alta,Pendiente,
+42,Backend,API Gateway,BE-GW-002,−,Funcional,Validación centralizada de JWT y propagación de claims,"Validar JWT en cada request. Propagar claims (sub, roles[]) como headers internos.",Sin token → 401. Claims propagados verificados en MS destino.,Alta,Pendiente,
+43,Backend,API Gateway,BE-GW-003,−,No Funcional,Rate limiting por IP y usuario,> 200 req/min por IP → 429.,> 200 req/min por IP → 429 Too Many Requests.,Alta,Pendiente,
+44,Backend,API Gateway,BE-GW-004,−,No Funcional,Latencia adicional gateway < 20 ms,Overhead del gateway no supera 20 ms adicionales.,p95 de latencia gateway < 20 ms.,Media,Pendiente,
+    Transversal Backend,,,,,,,,,,,
+45,Backend,Transversal Backend,BE-TRV-001,−,No Funcional,Disponibilidad >= 99.5%,Disponibilidad >= 99.5% mensual (7:00–21:00).,SLA documentado. Alertas automáticas.,Alta,Pendiente,
+46,Backend,Transversal Backend,BE-TRV-002,−,No Funcional,Escalabilidad horizontal por servicio,Cada MS escala horizontalmente via Kubernetes HPA.,Con 500 usuarios concurrentes p95 < 1 s.,Alta,Pendiente,AWS EKS
+47,Backend,Transversal Backend,BE-TRV-003,−,No Funcional,Health checks y readiness probes,Cada MS expone /health/live y /health/ready.,Pod NotReady si DB no responde.,Alta,Pendiente,Quarkus Health
+48,Backend,Transversal Backend,BE-TRV-004,−,No Funcional,Logging estructurado con correlationId,Logs JSON con correlationId en todos los servicios.,Búsqueda por correlationId retorna todos los eventos del request.,Media,Pendiente,AWS CloudWatch
+49,Backend,Transversal Backend,BE-TRV-005,−,No Funcional,Trazabilidad distribuida (OpenTelemetry),Tracing distribuido entre MS.,Trace completo visible en herramienta APM.,Media,Pendiente,OpenTelemetry + Jaeger
+▌  FRONTEND,,,,,,,,,,,
+    General,,,,,,,,,,,
+50,Frontend,General,FE-GEN-001,−,Funcional,Login y gestión de sesión,Login con validación. Almacenamiento seguro del JWT y manejo de expiración.,Token expirado → redirige a login.,Alta,Pendiente,
+51,Frontend,General,FE-GEN-002,−,Funcional,Navegación basada en roles,Menú y rutas adaptados al rol del usuario autenticado.,Docente no ve sección de administración.,Alta,Pendiente,React Router + guards
+52,Frontend,General,FE-GEN-003,−,Funcional,Dashboard principal con estadísticas,"Cards: asistencia promedio, notas promedio, alertas.",Datos visibles en < 3 s.,Alta,Pendiente,
+53,Frontend,General,FE-GEN-004,−,Funcional,Gestión de cursos y asignación de docentes,CRUD de cursos con asignación de docentes y permisos por curso.,Cambio de permiso refleja en sesión activa.,Alta,Pendiente,
+54,Frontend,General,FE-GEN-005,−,Funcional,Registro de notas y asistencia,Formularios con validaciones en tiempo real.,Nota fuera de rango muestra error sin perder datos.,Alta,Pendiente,
+55,Frontend,General,FE-GEN-006,NEW,Funcional,Gestión de contenido con jerarquía dinámica,UI que renderiza dinámicamente la jerarquía configurada (no hardcodeada). Subir/descargar archivos.,"Si jerarquía cambia en backend, frontend refleja nuevos nombres sin cambios de código.",Alta,Pendiente,Jerarquía obtenida desde Content Service API
+56,Frontend,General,FE-GEN-007,NEW,Funcional,Administración de roles y permisos,"Pantalla CRUD de roles, asignación de permisos (flags Unix) sobre recursos y asignación de roles a usuarios. Solo ADMIN/SUPERUSER.",Cambio de permiso aplicado en el siguiente token emitido.,Alta,Pendiente,Visualización legible de flags (r/w/x)
+57,Frontend,General,FE-GEN-008,−,Funcional,Anotaciones por alumno,Formulario para anotaciones positivas/negativas.,Anotación guardada aparece inmediatamente en historial.,Media,Pendiente,
+58,Frontend,General,FE-GEN-009,NEW,Funcional,Generación y descarga de reportes,"UI para seleccionar reporte, configurar parámetros y elegir formato (JSON vista previa, CSV/PDF descarga).",PDF descargable en < 15 s. CSV con encoding correcto.,Media,Pendiente,
+59,Frontend,General,FE-GEN-010,−,No Funcional,Diseño responsive,Usable en dispositivos >= 360px y escritorio.,Sin scroll horizontal en 360px. Táctiles >= 44px.,Alta,Pendiente,
+60,Frontend,General,FE-GEN-011,−,No Funcional,LCP <= 2.5 s,LCP <= 2.5 s en conexión 4G.,Lighthouse LCP >= 75 en móvil.,Media,Pendiente,Vite bundle optimization
+61,Frontend,General,FE-GEN-012,−,No Funcional,Manejo de errores sin detalles técnicos,Toda operación fallida muestra mensaje descriptivo sin stacktrace.,"Error 500 → 'Error inesperado, intente nuevamente'.",Alta,Pendiente,
+62,Frontend,General,FE-GEN-013,−,No Funcional,Accesibilidad WCAG 2.1 AA,Cumplir WCAG 2.1 AA.,axe sin errores críticos. Navegación por teclado funcional.,Baja,Pendiente,
+▌  PLATAFORMA / INFRAESTRUCTURA,,,,,,,,,,,
+    Contenedorización,,,,,,,,,,,
+63,Plataforma / Infraestructura,Contenedorización,INF-CTR-001,−,Funcional,Imágenes Docker por microservicio,Dockerfile optimizado con Quarkus JVM.,Imagen en < 3 min en CI. Tamaño < 200 MB.,Alta,Pendiente,Multi-stage build
+    Orquestación,,,,,,,,,,,
+64,Plataforma / Infraestructura,Orquestación,INF-ORC-001,−,Funcional,Despliegue en Amazon EKS,Todos los MS como Deployments en EKS.,kubectl get pods → todos Running.,Alta,Pendiente,
+65,Plataforma / Infraestructura,Orquestación,INF-ORC-002,−,Funcional,Horizontal Pod Autoscaler (HPA),"HPA: umbral CPU 70%, mín 2, máx 10 réplicas.","Con 80% CPU, nuevos pods en < 2 min.",Alta,Pendiente,
+66,Plataforma / Infraestructura,Orquestación,INF-ORC-003,−,No Funcional,Reducción de recursos en baja demanda,Cluster reduce réplicas en vacaciones.,Costo vacaciones >= 40% menor que período lectivo.,Media,Pendiente,
+    Base de Datos,,,,,,,,,,,
+67,Plataforma / Infraestructura,Base de Datos,INF-DB-001,MOD,Funcional,Shared DB con schemas separados en Amazon RDS ,Una única instancia Amazon RDS (PostgreSQL). Cada MS tiene su propio schema con credenciales de BD exclusivas (aislamiento técnico forzado). Report Service tiene credenciales adicionales de SOLO LECTURA sobre todos los schemas. Migraciones de schema coordinadas con Flyway/Liquibase.,MS X no puede leer/escribir schema de MS Y (credenciales separadas en RDS). Report Service accede en read-only a schemas ajenos. Migraciones versionadas y auditables.,Alta,Pendiente,Decisión ADR-001 cerrada. Ver BE-RPT-005.
+68,Plataforma / Infraestructura,Base de Datos,INF-DB-002,−,Funcional,Backups automáticos en RDS,Snapshots diarios con retención 30 días y réplica de lectura.,Restauración exitosa en < 1 hora.,Alta,Pendiente,
+69,Plataforma / Infraestructura,Base de Datos,INF-DB-003,−,No Funcional,Cifrado de datos en reposo (AES-256),Instancia RDS con cifrado AES-256.,StorageEncrypted = true en AWS Console.,Alta,Pendiente,
+    Mensajería,,,,,,,,,,,
+70,Plataforma / Infraestructura,Mensajería,INF-MSG-001,−,Funcional,Broker RabbitMQ para eventos async,RabbitMQ como broker central. Mensajes persisten ante reinicio.,Mensajes persisten ante reinicio.,Alta,Pendiente,
+71,Plataforma / Infraestructura,Mensajería,INF-MSG-002,−,No Funcional,Dead Letter Queue (DLQ),Mensajes fallidos tras N reintentos → DLQ + alerta.,DLQ visible en consola. Alerta en CloudWatch.,Alta,Pendiente,
+    CI/CD,,,,,,,,,,,
+72,Plataforma / Infraestructura,CI/CD,INF-CICD-001,−,Funcional,Pipeline CI/CD automatizado,Tests + build + push + deploy en cada merge a main.,Deploy completo en < 15 min.,Alta,Pendiente,GitHub Actions
+73,Plataforma / Infraestructura,CI/CD,INF-CICD-002,−,Funcional,"Ambientes separados: dev, staging, prod",3 ambientes independientes por namespace en EKS.,Deploy a staging no afecta producción.,Alta,Pendiente,
+    Almacenamiento,,,,,,,,,,,
+74,Plataforma / Infraestructura,Almacenamiento,INF-S3-001,−,Funcional,Bucket S3 para archivos académicos,Bucket privado con URLs pre-firmadas.,Archivo inaccesible sin URL válida.,Alta,Pendiente,
+75,Plataforma / Infraestructura,Almacenamiento,INF-S3-002,−,No Funcional,Lifecycle S3 hacia Glacier,Archivos no accedidos en 1 año → Glacier.,Archivos en Glacier tras 365 días.,Baja,Pendiente,
+    Monitoreo,,,,,,,,,,,
+76,Plataforma / Infraestructura,Monitoreo,INF-MON-001,−,Funcional,Monitoreo con CloudWatch,"Métricas y logs centralizados. Alertas: CPU > 80%, error rate > 5%, DLQ con mensajes.",Alertas configuradas y probadas.,Alta,Pendiente,
+77,Plataforma / Infraestructura,Monitoreo,INF-MON-002,−,No Funcional,Retención de logs 12 meses,Logs retenidos 365 días en CloudWatch.,Log group con retention policy = 365 días.,Media,Pendiente,
+▌  TRANSVERSAL,,,,,,,,,,,
+    Seguridad,,,,,,,,,,,
+78,Transversal,Seguridad,TRV-SEC-001,−,No Funcional,Cifrado TLS en todas las comunicaciones,TLS 1.2+ cliente-gateway y entre MS.,SSL Labs >= A.,Alta,Pendiente,
+79,Transversal,Seguridad,TRV-SEC-002,−,No Funcional,Principio de mínimo privilegio,Credenciales de BD y permisos IAM mínimos por MS.,MS de notas no accede a tabla de apoderados.,Alta,Pendiente,
+80,Transversal,Seguridad,TRV-SEC-003,−,No Funcional,Validación y sanitización de inputs,Todo input validado y sanitizado.,SQL injection y XSS → 422.,Alta,Pendiente,
+81,Transversal,Seguridad,TRV-SEC-004,−,No Funcional,Auditoría de accesos a datos sensibles,Log inmutable para accesos a datos de alumnos menores.,Log disponible para ADMIN. No modificable por docente.,Alta,Pendiente,
+    Privacidad,,,,,,,,,,,
+82,Transversal,Privacidad,TRV-PRI-001,−,No Funcional,Cumplimiento Ley 19.628,Sistema cumple Ley 19.628.,DPO sign-off. Datos sensibles identificados.,Alta,Pendiente,Datos de menores
+83,Transversal,Privacidad,TRV-PRI-002,−,No Funcional,Segregación de datos de apoderados,Datos de apoderados solo accesibles por Notification Service.,Otros MS no acceden directamente.,Alta,Pendiente,
+84,Transversal,Privacidad,TRV-PRI-003,−,No Funcional,Derecho a eliminación de datos,Eliminación de datos personales en 30 días hábiles.,Proceso documentado.,Media,Pendiente,
+    Sostenibilidad,,,,,,,,,,,
+85,Transversal,Sostenibilidad,TRV-SOS-001,−,No Funcional,Eficiencia de recursos con Quarkus,Quarkus reduce memoria vs Spring Boot >= 30%.,Benchmark documentado.,Media,Pendiente,
+86,Transversal,Sostenibilidad,TRV-SOS-002,−,No Funcional,Reducción de huella de carbono,Auto-scaling reduce instancias >= 50% fuera de horario.,Reporte mensual promedio vs peak.,Baja,Pendiente,
+    Documentación,,,,,,,,,,,
+87,Transversal,Documentación,TRV-DOC-001,−,No Funcional,APIs documentadas en OpenAPI 3.0,Cada MS expone contrato OpenAPI 3.0.,Swagger UI en /q/swagger-ui en dev.,Media,Pendiente,Quarkus SmallRye OpenAPI
+88,Transversal,Documentación,TRV-DOC-002,−,No Funcional,ADRs y diagramas actualizados,ADRs y diagramas actualizados en cada sprint.,README y diagramas vigentes.,Baja,Pendiente,
+    Testing,,,,,,,,,,,
+89,Transversal,Testing,TRV-TST-001,−,No Funcional,Cobertura tests unitarios >= 80%,Cobertura >= 80% por MS.,Merge bloqueado si < 80%.,Media,Pendiente,JaCoCo
+90,Transversal,Testing,TRV-TST-002,−,No Funcional,Tests de integración entre servicios,Tests con Testcontainers para contratos entre servicios.,Fallo bloquea deploy a producción.,Media,Pendiente,Testcontainers
