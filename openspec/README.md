@@ -23,9 +23,7 @@ openspec/
     ├── async-events/                 Eventos RabbitMQ, forma del payload, DLQ
     ├── observability/                Health, X-Correlation-ID, OpenTelemetry, logging
     ├── auth-service/                 Dominio: identidad, JWT, refresh, roles, grants
-    ├── student-service/              Dominio: alumnos, apoderados, traslados, eventos
     ├── attendance-service/           Dominio: sesiones y registros de asistencia
-    └── planned-services/             Course, Content, Assessment, Annotation, Notification, Report
 ```
 
 Las primeras 10 capabilities son **contratos de plataforma** (transversales, los que un MS
@@ -59,14 +57,4 @@ Reglas:
 - Los escenarios son verificables (un test o una observación los confirma).
 - Cuando aplica, cada requirement referencia el ID de `doc/requisitos_libro_clases.csv`
   (`BE-AUTH-005`, etc.) y/o la clase/archivo que lo implementa.
-
-## Estado de implementación
-
-| Capability | Estado |
-|---|---|
-| api-gateway, service-discovery, request-context, authorization, inter-service-communication, error-handling, data-persistence, api-conventions | ✅ Implementado en `commons` + `infra/gateway` |
-| auth-service | ✅ Implementado |
-| student-service, attendance-service | ✅ Implementado (eventos async como stub de log) |
-| async-events | 🟨 Contrato definido; broker RabbitMQ pendiente (hoy log) |
-| observability | 🟨 Health + correlation-id listos; OTel/tracing parcial |
-| planned-services | ⬜ Especificado, no implementado |
+  

@@ -7,8 +7,8 @@
 
 ## Purpose
 
-EduTrack es la **plataforma de libro de clases digital** del Colegio Bernardo O'Higgins
-(Coquimbo). Reemplaza el libro de clases físico por un backend de microservicios que
+EduTrack es la **plataforma de libro de clases digital** para instintuciones educativas de Chile.
+Reemplaza el libro de clases físico por un backend de microservicios que
 gestiona identidad, alumnos, cursos, contenido, evaluaciones, asistencia, anotaciones,
 notificaciones y reportes.
 
@@ -33,7 +33,7 @@ Fullstack III** (Duoc UC). La matriz de requisitos vive en
 | Observabilidad | SmallRye Health, OpenTelemetry, logging con `X-Correlation-ID` |
 | Frontend | React + Vite + TypeScript + Tailwind (`front/`) |
 | Empaquetado | Docker (multi-stage, Dockerfile.jvm) |
-| Hosting | Fly.io (cada MS es una app; DNS privado `*.fly.internal`). Target de la matriz: AWS EKS + RDS |
+| Hosting | Fly.io (cada MS es una app; DNS privado `*.fly.internal`) |
 
 ## Monorepo layout
 

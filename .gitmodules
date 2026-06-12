@@ -17,4 +17,4 @@
 [submodule "infra"]
 	path = infra
 	url = git@github.com:goslynn/edutrack-infra.git
-	branch = flyio
+	branch = master

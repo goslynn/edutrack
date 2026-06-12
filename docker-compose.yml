@@ -113,6 +113,8 @@ services:
     environment:
       UPSTREAM_HOST_PATTERN: "{service}:8080"
       JWKS_SERVICE: "auth"
+      # Origen de la SPA que el gateway autoriza vía CORS (default dev :5173).
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-http://localhost:5173}
       # Path interno (determinista) de la pública dentro del volumen montado; el
       #   entrypoint carga su contenido en JWT_PUBLIC_KEY antes de arrancar nginx.
       JWT_PUBLIC_KEY_FILE: /certs/publicKey.pem
@@ -170,43 +172,39 @@ services:
         condition: service_healthy
 
   # ── Student: datasource env-driven (DB_*), mismo contrato que attendance ──────
-  student:
-    <<: *ms-base
-    build:
-      context: ${STUDENT_CONTEXT:-./student}
-      dockerfile: *ms-dockerfile
-    image: edutrack/student:local
-    container_name: student
-    hostname: student
-    ports:
-      - "${STUDENT_PORT:-8083}:8080"
-    depends_on:
-      <<: *depends-db
-      auth:
-        condition: service_healthy
+  # student:
+  #   <<: *ms-base
+  #   build:
+  #     context: ${STUDENT_CONTEXT:-./student}
+  #     dockerfile: *ms-dockerfile
+  #   image: edutrack/student:local
+  #   container_name: student
+  #   hostname: student
+  #   ports:
+  #     - "${STUDENT_PORT:-8083}:8080"
+  #   depends_on:
+  #     <<: *depends-db
+  #     auth:
+  #       condition: service_healthy
 
-  # ── Frontend: Vite dev. El navegador (no el contenedor) golpea el gateway en el
-  #   host, por eso NO va en la red `edutrack` (lo alcanza por localhost). ────────
+  # ── Frontend: bundle estático (Vite build) servido por node. El navegador (no el
+  #   contenedor) golpea el gateway en el host (localhost:8080); el contenedor en sí
+  #   solo sirve estáticos y no necesita resolver otros servicios. Se incluye en la
+  #   red `edutrack` para evitar que Compose cree `edutrack_default` con una subred
+  #   auto-asignada que solape con la subred fija de `edutrack` (172.18.0.0/16).
+  #   VITE_API_BASE_URL se HORNEA en build-time —Vite inlinea import.meta.env— por
+  #   eso es un build arg, no `environment`. ─────────────────────────────────────
   front:
     build:
       context: ${FRONT_CONTEXT:-./front}
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
     image: edutrack/web:local
     container_name: edutrack-web
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - CI=true
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8080}
-    volumes:
-      - ${FRONT_CONTEXT:-./front}/src:/app/src
-      - ${FRONT_CONTEXT:-./front}/public:/app/public
-      - ${FRONT_CONTEXT:-./front}/index.html:/app/index.html
-      - ${FRONT_CONTEXT:-./front}/package.json:/app/package.json
-      - ${FRONT_CONTEXT:-./front}/pnpm-lock.yaml:/app/pnpm-lock.yaml
-      - app-node-modules:/app/node_modules
-      - app-pnpm-store:/app/.pnpm-store
     ports:
       - "${FRONT_PORT:-5173}:5173"
+    networks: [edutrack]
     depends_on:
       gateway:
         condition: service_healthy
@@ -215,8 +213,6 @@ services:
 volumes:
   db_data:
     name: ${DB_VOLUME:-edutrack_pgdata}
-  app-node-modules:
-  app-pnpm-store:
 
 networks:
   # Este compose POSEE la red. Subred/gateway fijos (dev) para que un `compose
