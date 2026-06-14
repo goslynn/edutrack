@@ -18,3 +18,19 @@
 	path = infra
 	url = git@github.com:goslynn/edutrack-infra.git
 	branch = master
+[submodule "annotation"]
+	path = annotation
+	url = git@github.com:goslynn/edutrack-ms-annotation.git
+	branch = master
+[submodule "assessment"]
+	path = assessment
+	url = git@github.com:goslynn/edutrack-ms-assessment.git
+	branch = master
+[submodule "course"]
+	path = course
+	url = git@github.com:goslynn/edutrack-ms-course.git
+	branch = master
+[submodule "student"]
+	path = student
+	url = git@github.com:goslynn/edutrack-ms-student.git
+	branch = master
