@@ -34,3 +34,7 @@
 	path = student
 	url = git@github.com:goslynn/edutrack-ms-student.git
 	branch = master
+[submodule "bff"]
+    path = bff
+    url = git@github.com:goslynn/edutrack-bff.git
+    branch = master
