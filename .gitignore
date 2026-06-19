@@ -3,3 +3,4 @@
 .certs/
 *.pem
 .quarkus/
+.playwright-cli/

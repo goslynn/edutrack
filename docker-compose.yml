@@ -172,20 +172,96 @@ services:
         condition: service_healthy
 
   # ── Student: datasource env-driven (DB_*), mismo contrato que attendance ──────
-  # student:
-  #   <<: *ms-base
-  #   build:
-  #     context: ${STUDENT_CONTEXT:-./student}
-  #     dockerfile: *ms-dockerfile
-  #   image: edutrack/student:local
-  #   container_name: student
-  #   hostname: student
-  #   ports:
-  #     - "${STUDENT_PORT:-8083}:8080"
-  #   depends_on:
-  #     <<: *depends-db
-  #     auth:
-  #       condition: service_healthy
+  student:
+    <<: *ms-base
+    build:
+      context: ${STUDENT_CONTEXT:-./student}
+      dockerfile: *ms-dockerfile
+    image: edutrack/student:local
+    container_name: student
+    hostname: student
+    ports:
+      - "${STUDENT_PORT:-8083}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+  course:
+    <<: *ms-base
+    build:
+      context: ${COURSE_CONTEXT:-./course}
+      dockerfile: *ms-dockerfile
+    image: edutrack/course:local
+    container_name: course
+    hostname: course
+    ports:
+      - "${COURSE_PORT:-8084}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+  annotation:
+    <<: *ms-base
+    build:
+      context: ${ANNOTATION_CONTEXT:-./annotation}
+      dockerfile: *ms-dockerfile
+    image: edutrack/annotation:local
+    container_name: annotation
+    hostname: annotation
+    ports:
+      - "${ANNOTATION_PORT:-8085}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+  assessment:
+    <<: *ms-base
+    build:
+      context: ${ASSESSMENT_CONTEXT:-./assessment}
+      dockerfile: *ms-dockerfile
+    image: edutrack/assessment:local
+    container_name: assessment
+    hostname: assessment
+    ports:
+      - "${ASSESSMENT_PORT:-8086}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+        
+  # ── BFF: Backend for Frontend — orquesta llamadas a los MS y devuelve bundles ───
+  #   optimizados para cada pantalla del front. Recibe tráfico del gateway vía
+  #   el path `/bff` (mismo contrato de discovery que los demás MS).
+  bff:
+    build:
+      context: ${BFF_CONTEXT:-./bff}
+      dockerfile: Dockerfile
+    image: edutrack/bff:local
+    container_name: bff
+    hostname: bff
+    env_file: [./.env]
+    environment:
+      PORT: 8080
+      STUDENT_MS_URL:    ${STUDENT_MS_URL:-http://student:8080}
+      COURSE_MS_URL:     ${COURSE_MS_URL:-http://course:8080}
+      AUTH_MS_URL:       ${AUTH_MS_URL:-http://auth:8080}
+      ANNOTATION_MS_URL: ${ANNOTATION_MS_URL:-http://annotation:8080}
+      ATTENDANCE_MS_URL: ${ATTENDANCE_MS_URL:-http://attendance:8080}
+      ASSESSMENT_MS_URL: ${ASSESSMENT_MS_URL:-http://assessment:8080}
+    ports:
+      - "${BFF_PORT:-8090}:8080"
+    networks: [edutrack]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: on-failure
 
   # ── Frontend: bundle estático (Vite build) servido por node. El navegador (no el
   #   contenedor) golpea el gateway en el host (localhost:8080); el contenedor en sí
