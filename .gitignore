@@ -4,3 +4,6 @@
 *.pem
 .quarkus/
 .playwright-cli/
+
+# directorio que guarda scripts sql para poblar la base de datos de edutrack 
+.seed/
