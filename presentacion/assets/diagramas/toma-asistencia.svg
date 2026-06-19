@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 640" font-family="'Geist','Segoe UI',sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="11" markerHeight="11" refX="8" refY="3.2" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3.2 L0,6.4 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .t{font-size:13px;fill:#64748b;font-weight:700;letter-spacing:.06em}
+      .lbl{font-size:14px;fill:#0f172a;font-weight:600}
+      .sub{font-size:11px;fill:#475569}
+      .edge{stroke:#94a3b8;stroke-width:2;fill:none}
+      .ad{fill:#eff6ff;stroke:#2563eb;stroke-width:1.8}
+      .adoff{fill:#f8fafc;stroke:#94a3b8;stroke-width:1.6;stroke-dasharray:6 4}
+    </style>
+  </defs>
+
+  <text x="24" y="32" class="t">TOMA DE ASISTENCIA — PRINCIPIO ABIERTO/CERRADO (OPEN/CLOSED) + ADAPTER</text>
+
+  <!-- LEFT: adapters -->
+  <text x="40" y="78" class="t" font-size="12">MÉTODOS DE CAPTURA · Adapters (clientes externos)</text>
+
+  <rect class="ad" x="40" y="92" width="250" height="60" rx="10"/>
+  <text x="58" y="118" class="lbl">Manual — UI web</text>
+  <text x="58" y="138" class="sub">implementado ✓ · captureMethod="MANUAL"</text>
+
+  <rect class="adoff" x="40" y="166" width="250" height="56" rx="10"/>
+  <text x="58" y="190" class="lbl" fill="#475569">Biométrico</text>
+  <text x="58" y="208" class="sub">adapter futuro · "BIOMETRIC"</text>
+
+  <rect class="adoff" x="40" y="236" width="250" height="56" rx="10"/>
+  <text x="58" y="260" class="lbl" fill="#475569">RFID / tarjeta</text>
+  <text x="58" y="278" class="sub">adapter futuro · "RFID"</text>
+
+  <rect class="adoff" x="40" y="306" width="250" height="56" rx="10"/>
+  <text x="58" y="330" class="lbl" fill="#475569">… método nuevo</text>
+  <text x="58" y="348" class="sub">se suma sin tocar el MS</text>
+
+  <text x="40" y="392" class="sub" font-style="italic">Cada adapter traduce su dato crudo al mismo contrato →</text>
+
+  <!-- arrows from adapters to contract -->
+  <line class="edge" x1="290" y1="122" x2="372" y2="200" marker-end="url(#arr)"/>
+  <line class="edge" x1="290" y1="194" x2="372" y2="220" marker-end="url(#arr)"/>
+  <line class="edge" x1="290" y1="264" x2="372" y2="240" marker-end="url(#arr)"/>
+  <line class="edge" x1="290" y1="334" x2="372" y2="260" marker-end="url(#arr)"/>
+
+  <!-- MIDDLE: normalized contract -->
+  <rect x="376" y="150" width="246" height="160" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="499" y="178" text-anchor="middle" class="lbl" fill="#15803d">Contrato normalizado</text>
+  <text x="499" y="196" text-anchor="middle" class="sub">POST /sessions/{id}/records</text>
+  <line x1="396" y1="206" x2="602" y2="206" stroke="#bbf7d0"/>
+  <text x="396" y="226" class="sub" font-family="'Geist Mono',monospace">studentId : UUID</text>
+  <text x="396" y="244" class="sub" font-family="'Geist Mono',monospace">status : PRESENT|ABSENT|JUSTIFIED</text>
+  <text x="396" y="262" class="sub" font-family="'Geist Mono',monospace">captureMethod : String</text>
+  <text x="396" y="280" class="sub" font-family="'Geist Mono',monospace">metadata : Map (libre)</text>
+  <text x="396" y="298" class="sub" font-family="'Geist Mono',monospace">recordedAt : ISO-8601</text>
+
+  <line class="edge" x1="622" y1="230" x2="676" y2="230" marker-end="url(#arr)" stroke="#475569"/>
+
+  <!-- RIGHT: sealed core -->
+  <rect x="680" y="92" width="476" height="300" rx="14" fill="#fff" stroke="#334155" stroke-width="2.4"/>
+  <text x="704" y="122" class="t" font-size="13" fill="#334155">ATTENDANCE MS — núcleo CERRADO a modificación</text>
+
+  <rect x="704" y="138" width="428" height="64" rx="9" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="720" y="164" class="lbl">1 · Valida sesión OPEN</text>
+  <text x="720" y="184" class="sub">session.validateOpen() — si está CLOSED ⇒ rechaza (no se modifica lo cerrado)</text>
+
+  <rect x="704" y="212" width="428" height="64" rx="9" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="720" y="238" class="lbl">2 · Evita duplicados</text>
+  <text x="720" y="258" class="sub">existsByStudentAndSession(...) ⇒ 409 Conflict</text>
+
+  <rect x="704" y="286" width="428" height="78" rx="9" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="720" y="312" class="lbl">3 · Persiste el registro</text>
+  <text x="720" y="332" class="sub">guarda status + captureMethod + metadata</text>
+  <text x="720" y="350" class="sub" font-weight="700" fill="#1e40af">SIN interpretar el método de captura — el MS no sabe de biometría ni RFID</text>
+
+  <!-- bottom banner -->
+  <rect x="24" y="430" width="1132" height="92" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.4"/>
+  <text x="44" y="462" class="lbl" fill="#1e40af" font-size="15">¿Por qué Open/Closed?</text>
+  <text x="44" y="486" class="sub" font-size="12.5"><tspan font-weight="700">Abierto a extensión:</tspan> un método de captura nuevo = un Adapter externo nuevo que produce el mismo contrato.</text>
+  <text x="44" y="506" class="sub" font-size="12.5"><tspan font-weight="700">Cerrado a modificación:</tspan> el microservicio de asistencia nunca cambia su código para soportarlo. (Requisito BE-ATT-004)</text>
+</svg>

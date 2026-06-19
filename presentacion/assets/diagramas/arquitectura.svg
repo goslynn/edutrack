@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 640" font-family="'Geist','Segoe UI',sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .lbl{font-size:15px;fill:#0f172a;font-weight:600}
+      .sub{font-size:11px;fill:#475569}
+      .box{fill:#ffffff;stroke:#334155;stroke-width:2}
+      .ms{fill:#eff6ff;stroke:#2563eb;stroke-width:1.8}
+      .msoff{fill:#f1f5f9;stroke:#94a3b8;stroke-width:1.6;stroke-dasharray:5 4}
+      .edge{stroke:#475569;stroke-width:2;fill:none}
+      .title{font-size:13px;fill:#64748b;font-weight:700;letter-spacing:.06em}
+    </style>
+  </defs>
+
+  <text x="24" y="34" class="title">EDUTRACK — ARQUITECTURA (estado actual)</text>
+
+  <!-- Cliente -->
+  <rect class="box" x="24" y="250" width="150" height="80" rx="10"/>
+  <text x="99" y="282" text-anchor="middle" class="lbl">Cliente</text>
+  <text x="99" y="302" text-anchor="middle" class="sub">React 19 + Vite</text>
+  <text x="99" y="318" text-anchor="middle" class="sub">SPA · Tailwind/shadcn</text>
+
+  <!-- BFF -->
+  <rect class="box" x="210" y="250" width="150" height="80" rx="10"/>
+  <text x="285" y="282" text-anchor="middle" class="lbl">BFF</text>
+  <text x="285" y="302" text-anchor="middle" class="sub">TypeScript + Hono</text>
+  <text x="285" y="318" text-anchor="middle" class="sub">(no previsto en plan 1)</text>
+
+  <!-- Gateway -->
+  <rect class="box" x="396" y="240" width="160" height="100" rx="10" fill="#fef9c3" stroke="#ca8a04"/>
+  <text x="476" y="272" text-anchor="middle" class="lbl">API Gateway</text>
+  <text x="476" y="292" text-anchor="middle" class="sub">OpenResty + Lua</text>
+  <text x="476" y="308" text-anchor="middle" class="sub">valida JWT RS256</text>
+  <text x="476" y="324" text-anchor="middle" class="sub">propaga X-User-Id / Roles</text>
+
+  <!-- Microservices container -->
+  <rect x="596" y="110" width="392" height="360" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="612" y="136" class="title" font-size="12">MICROSERVICIOS · Quarkus + Java 21</text>
+
+  <!-- row 1 -->
+  <rect class="ms" x="612" y="150" width="116" height="64" rx="9"/><text x="670" y="180" text-anchor="middle" class="lbl" font-size="14">auth</text><text x="670" y="198" text-anchor="middle" class="sub">JWT · permisos</text>
+  <rect class="ms" x="740" y="150" width="116" height="64" rx="9"/><text x="798" y="180" text-anchor="middle" class="lbl" font-size="14">course</text><text x="798" y="198" text-anchor="middle" class="sub">cursos</text>
+  <rect class="ms" x="868" y="150" width="104" height="64" rx="9"/><text x="920" y="180" text-anchor="middle" class="lbl" font-size="14">student</text><text x="920" y="198" text-anchor="middle" class="sub">alumnos</text>
+  <!-- row 2 -->
+  <rect class="ms" x="612" y="228" width="116" height="64" rx="9"/><text x="670" y="258" text-anchor="middle" class="lbl" font-size="14">attendance</text><text x="670" y="276" text-anchor="middle" class="sub">asistencia</text>
+  <rect class="ms" x="740" y="228" width="116" height="64" rx="9"/><text x="798" y="258" text-anchor="middle" class="lbl" font-size="14">assessment</text><text x="798" y="276" text-anchor="middle" class="sub">notas</text>
+  <rect class="ms" x="868" y="228" width="104" height="64" rx="9"/><text x="920" y="258" text-anchor="middle" class="lbl" font-size="14">annotation</text><text x="920" y="276" text-anchor="middle" class="sub">anotaciones</text>
+  <!-- row 3 (pendientes) -->
+  <rect class="msoff" x="612" y="306" width="116" height="64" rx="9"/><text x="670" y="336" text-anchor="middle" class="lbl" font-size="14" fill="#64748b">content</text><text x="670" y="354" text-anchor="middle" class="sub">pendiente</text>
+  <rect class="msoff" x="740" y="306" width="116" height="64" rx="9"/><text x="798" y="332" text-anchor="middle" class="lbl" font-size="13" fill="#64748b">notification</text><text x="798" y="354" text-anchor="middle" class="sub">pendiente</text>
+  <rect class="msoff" x="868" y="306" width="104" height="64" rx="9"/><text x="920" y="336" text-anchor="middle" class="lbl" font-size="14" fill="#64748b">report</text><text x="920" y="354" text-anchor="middle" class="sub">pendiente</text>
+
+  <!-- PostgreSQL cylinder -->
+  <g>
+    <ellipse cx="1080" cy="240" rx="58" ry="18" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <path d="M1022,240 V320 a58,18 0 0 0 116,0 V240" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <ellipse cx="1080" cy="240" rx="58" ry="18" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <text x="1080" y="282" text-anchor="middle" class="lbl" font-size="13">PostgreSQL</text>
+    <text x="1080" y="300" text-anchor="middle" class="sub">shared DB</text>
+    <text x="1080" y="315" text-anchor="middle" class="sub">schema por MS</text>
+  </g>
+
+  <!-- edges -->
+  <line class="edge" x1="174" y1="290" x2="206" y2="290" marker-end="url(#arr)"/>
+  <line class="edge" x1="360" y1="290" x2="392" y2="290" marker-end="url(#arr)"/>
+  <line class="edge" x1="556" y1="290" x2="592" y2="290" marker-end="url(#arr)"/>
+  <text x="574" y="280" class="sub" font-size="10">REST</text>
+  <!-- MS to DB -->
+  <line class="edge" x1="988" y1="290" x2="1024" y2="290" marker-end="url(#arr)"/>
+
+  <!-- leyenda -->
+  <rect x="24" y="510" width="16" height="14" class="ms" rx="3"/><text x="48" y="522" class="sub">implementado (6/9)</text>
+  <rect x="200" y="510" width="16" height="14" class="msoff" rx="3"/><text x="224" y="522" class="sub">pendiente</text>
+  <line class="edge" x1="330" y1="517" x2="364" y2="517"/><text x="372" y="522" class="sub">REST síncrono</text>
+  <text x="24" y="560" class="sub">Hosting: Fly.io — cada MS es una app; descubrimiento por contrato de nombres vía *.fly.internal (sin Consul). Local: Docker Compose.</text>
+  <text x="24" y="580" class="sub">Resiliencia: SmallRye Fault Tolerance (Circuit Breaker). Aislamiento de datos: credenciales de BD exclusivas por schema.</text>
+</svg>

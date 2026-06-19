@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>EduTrack — Resultados de tests</title>
+<style>
+  :root{--ink:#0f172a;--mut:#64748b;--blue:#2563eb;--green:#16a34a}
+  body{margin:0;font-family:'Geist','Segoe UI',system-ui,sans-serif;color:var(--ink);background:#fff}
+  .wrap{display:flex;gap:40px;flex-wrap:wrap;padding:24px 28px;align-items:flex-start}
+  .panel{flex:1;min-width:420px}
+  h2{font-size:15px;letter-spacing:.05em;color:var(--mut);margin:0 0 4px;text-transform:uppercase}
+  .cap{font-size:12px;color:var(--mut);margin:0 0 16px}
+  .bar-row{display:grid;grid-template-columns:108px 1fr 56px;align-items:center;gap:10px;margin:9px 0}
+  .name{font-size:13px;font-weight:600;text-align:right}
+  .track{background:#eef2f7;border-radius:6px;height:22px;overflow:hidden}
+  .fill{height:100%;border-radius:6px;display:block}
+  .val{font-size:13px;font-weight:700}
+  .b{background:linear-gradient(90deg,#3b82f6,#2563eb)}
+  .g{background:linear-gradient(90deg,#22c55e,#16a34a)}
+  .total{margin-top:14px;font-size:14px}
+  .total b{font-size:22px;color:var(--blue)}
+  .pill{display:inline-block;background:#dcfce7;color:#15803d;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:8px}
+  .src{font-size:11px;color:var(--mut);margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h2>Backend · tests unitarios por servicio</h2>
+    <p class="cap">JUnit 5 / Quarkus — <code>./mvnw test</code></p>
+
+    <div class="bar-row"><span class="name">auth</span><span class="track"><span class="fill b" style="width:100%"></span></span><span class="val">62</span></div>
+    <div class="bar-row"><span class="name">student</span><span class="track"><span class="fill b" style="width:64.5%"></span></span><span class="val">40</span></div>
+    <div class="bar-row"><span class="name">attendance</span><span class="track"><span class="fill b" style="width:61.3%"></span></span><span class="val">38</span></div>
+    <div class="bar-row"><span class="name">assessment</span><span class="track"><span class="fill b" style="width:53.2%"></span></span><span class="val">33</span></div>
+    <div class="bar-row"><span class="name">course</span><span class="track"><span class="fill b" style="width:27.4%"></span></span><span class="val">17</span></div>
+    <div class="bar-row"><span class="name">annotation</span><span class="track"><span class="fill b" style="width:25.8%"></span></span><span class="val">16</span></div>
+
+    <p class="total"><b>206</b> tests<span class="pill">0 fallos · 0 errores</span></p>
+  </div>
+
+  <div class="panel">
+    <h2>Frontend · cobertura</h2>
+    <p class="cap">Vitest + Testing Library — <code>pnpm test:coverage</code> · 26 archivos de test</p>
+
+    <div class="bar-row"><span class="name">Statements</span><span class="track"><span class="fill g" style="width:96.04%"></span></span><span class="val">96.0%</span></div>
+    <div class="bar-row"><span class="name">Branches</span><span class="track"><span class="fill g" style="width:88.76%"></span></span><span class="val">88.8%</span></div>
+    <div class="bar-row"><span class="name">Functions</span><span class="track"><span class="fill g" style="width:97.4%"></span></span><span class="val">97.4%</span></div>
+    <div class="bar-row"><span class="name">Lines</span><span class="track"><span class="fill g" style="width:97.59%"></span></span><span class="val">97.6%</span></div>
+
+    <p class="total">Cobertura global <b style="color:var(--green)">~96%</b><span class="pill">875/911 statements</span></p>
+    <p class="src">Reporte HTML: <code>front/coverage/index.html</code></p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+EduTrack — Resultados de tests unitarios (snapshot 2026-06-18)
+================================================================
+
+BACKEND (JUnit 5 / Quarkus)  —  ./mvnw test por servicio
+------------------------------------------------
+Servicio        Tests   Failures   Errors
+auth               62          0        0
+student            40          0        0
+attendance         38          0        0
+assessment         33          0        0
+course             17          0        0
+annotation         16          0        0
+------------------------------------------------
+TOTAL backend: 206 tests, 0 failures, 0 errors
+
+FRONTEND (Vitest + Testing Library)  —  pnpm test:coverage
+------------------------------------------------
+26 archivos de test. Cobertura (Istanbul, front/coverage/index.html):
+  Statements  96.04%  (875/911)
+  Branches    88.76%  (411/463)
+  Functions   97.40%  (263/270)
+  Lines       97.59%  (772/791)
