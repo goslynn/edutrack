@@ -34,6 +34,18 @@
 	path = student
 	url = git@github.com:goslynn/edutrack-ms-student.git
 	branch = master
+[submodule "notification"]
+	path = notification
+	url = git@github.com:goslynn/edutrack-ms-notification.git
+	branch = master
+[submodule "content"]
+	path = content
+	url = git@github.com:goslynn/edutrack-ms-content.git
+	branch = master
+[submodule "report"]
+	path = report
+	url = git@github.com:goslynn/edutrack-ms-report.git
+	branch = master
 [submodule "bff"]
     path = bff
     url = git@github.com:goslynn/edutrack-bff.git

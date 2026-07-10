@@ -202,6 +202,30 @@ services:
       auth:
         condition: service_healthy
 
+  # ── Content: arbol jerarquico + archivos. El binario se guarda en disco (Strategy
+  #   FileSystem v1) bajo /data/content, respaldado por un VOLUMEN persistente para
+  #   que los archivos sobrevivan reinicios/recreaciones del contenedor. Consulta a
+  #   auth por permisos ⇒ depende de auth healthy. Migrar a S3 es swappear la
+  #   implementacion de FileStorage (y retirar este volumen). ─────────────────────
+  content:
+    <<: *ms-base
+    build:
+      context: ${CONTENT_CONTEXT:-./content}
+      dockerfile: *ms-dockerfile
+    image: edutrack/content:local
+    container_name: content
+    hostname: content
+    environment:
+      CONTENT_STORAGE_DIR: /data/content
+    volumes:
+      - content_files:/data/content
+    ports:
+      - "${CONTENT_PORT:-8088}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
   annotation:
     <<: *ms-base
     build:
@@ -232,7 +256,49 @@ services:
       auth:
         condition: service_healthy
 
-        
+  # ── Notification: encola y envía correo (Strategy/EMAIL_HTML). Consulta a auth ──
+  #   por permisos (commons AuthClient) ⇒ depende de auth healthy. Mailer en modo
+  #   mock por defecto en local (MAIL_MOCK=true): no envía correo real sin creds de
+  #   proveedor. Poner MAIL_MOCK=false + MAIL_USER/MAIL_PASSWORD (Brevo) en .env
+  #   para envío real.
+  notification:
+    <<: *ms-base
+    build:
+      context: ${NOTIFICATION_CONTEXT:-./notification}
+      dockerfile: *ms-dockerfile
+    image: edutrack/notification:local
+    container_name: notification
+    hostname: notification
+    environment:
+      QUARKUS_MAILER_MOCK: ${MAIL_MOCK:-true}
+    ports:
+      - "${NOTIFICATION_PORT:-8087}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+  # ── Report: definiciones de reporte en BD + generacion JSON/CSV/PDF (JasperReports).
+  #   Consulta a auth por permisos ⇒ depende de auth healthy. Usa credenciales
+  #   read-only cross-schema (ADR-001) para consolidar datos de otros MS; en local
+  #   ambos datasources apuntan al mismo Postgres con el usuario compartido, en prod
+  #   el datasource `readonly` seria un rol con SELECT sobre los demas schemas.
+  report:
+    <<: *ms-base
+    build:
+      context: ${REPORT_CONTEXT:-./report}
+      dockerfile: *ms-dockerfile
+    image: edutrack/report:local
+    container_name: report
+    hostname: report
+    ports:
+      - "${REPORT_PORT:-8089}:8080"
+    depends_on:
+      <<: *depends-db
+      auth:
+        condition: service_healthy
+
+
   # ── BFF: Backend for Frontend — orquesta llamadas a los MS y devuelve bundles ───
   #   optimizados para cada pantalla del front. Recibe tráfico del gateway vía
   #   el path `/bff` (mismo contrato de discovery que los demás MS).
@@ -252,6 +318,7 @@ services:
       ANNOTATION_MS_URL: ${ANNOTATION_MS_URL:-http://annotation:8080}
       ATTENDANCE_MS_URL: ${ATTENDANCE_MS_URL:-http://attendance:8080}
       ASSESSMENT_MS_URL: ${ASSESSMENT_MS_URL:-http://assessment:8080}
+      CONTENT_MS_URL:    ${CONTENT_MS_URL:-http://content:8080}
     ports:
       - "${BFF_PORT:-8090}:8080"
     networks: [edutrack]
@@ -289,6 +356,9 @@ services:
 volumes:
   db_data:
     name: ${DB_VOLUME:-edutrack_pgdata}
+  # Almacenamiento persistente de archivos del Content Service (Strategy FileSystem).
+  content_files:
+    name: ${CONTENT_VOLUME:-edutrack_content_files}
 
 networks:
   # Este compose POSEE la red. Subred/gateway fijos (dev) para que un `compose
